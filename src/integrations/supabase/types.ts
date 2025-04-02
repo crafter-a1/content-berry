@@ -9,7 +9,127 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      collections: {
+        Row: {
+          api_id: string
+          created_at: string
+          description: string | null
+          icon: string | null
+          icon_color: string | null
+          id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          api_id: string
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          icon_color?: string | null
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          api_id?: string
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          icon_color?: string | null
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      content_items: {
+        Row: {
+          collection_id: string | null
+          created_at: string
+          data: Json
+          id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          collection_id?: string | null
+          created_at?: string
+          data?: Json
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          collection_id?: string | null
+          created_at?: string
+          data?: Json
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_items_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fields: {
+        Row: {
+          api_id: string
+          collection_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          required: boolean | null
+          settings: Json | null
+          sort_order: number | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          api_id: string
+          collection_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          required?: boolean | null
+          settings?: Json | null
+          sort_order?: number | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          api_id?: string
+          collection_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          required?: boolean | null
+          settings?: Json | null
+          sort_order?: number | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fields_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

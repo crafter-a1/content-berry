@@ -78,7 +78,7 @@ export function CollectionListItem({
               <Link to={`/collections/${id}/fields`}>Configure Fields</Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link to={`/content/${id}`}>View Content</Link>
+              <Link to={`/content?collection=${id}`}>View Content</Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

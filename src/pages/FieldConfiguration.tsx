@@ -1,6 +1,6 @@
 
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,6 +10,8 @@ import { FieldTypeSelector } from '@/components/fields/FieldTypeSelector';
 import { FieldConfigPanel } from '@/components/fields/FieldConfigPanel';
 import { FieldList } from '@/components/fields/FieldList';
 import { toast } from '@/hooks/use-toast';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getFieldsForCollection, createField } from '@/services/CollectionService';
 
 const fieldTypes = [
   { id: 'text', name: 'Text', description: 'Single line text field' },
@@ -25,38 +27,39 @@ const fieldTypes = [
 ];
 
 export default function FieldConfiguration() {
-  const { collectionId } = useParams();
+  const { collectionId } = useParams<{ collectionId: string }>();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  
   const [selectedFieldType, setSelectedFieldType] = useState<string | null>(null);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('fields');
   
-  // Mock data for fields - in a real app this would come from an API
-  const [fields, setFields] = useState([
-    { 
-      id: 'title', 
-      name: 'Title',
-      type: 'text',
-      required: true,
-      description: 'The title of the content item',
-      settings: { 
-        minLength: 3, 
-        maxLength: 100,
-        placeholder: 'Enter title...'
-      }
-    },
-    { 
-      id: 'description', 
-      name: 'Description',
-      type: 'textarea',
-      required: false,
-      description: 'A detailed description',
-      settings: { 
-        minLength: 0, 
-        maxLength: 500,
-        placeholder: 'Enter description...'
-      }
+  // Redirect if no collectionId
+  useEffect(() => {
+    if (!collectionId) {
+      navigate('/collections');
     }
-  ]);
+  }, [collectionId, navigate]);
+  
+  // Fetch fields for the selected collection
+  const { data: fields = [], isLoading, error } = useQuery({
+    queryKey: ['fields', collectionId],
+    queryFn: () => getFieldsForCollection(collectionId!),
+    enabled: !!collectionId
+  });
+  
+  // Create field mutation
+  const createFieldMutation = useMutation({
+    mutationFn: (fieldData: any) => createField(collectionId!, fieldData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fields', collectionId] });
+      // Also invalidate collections to update fields count
+      queryClient.invalidateQueries({ queryKey: ['collections'] });
+      setSelectedFieldType(null);
+      setSelectedFieldId(null);
+    }
+  });
 
   const selectFieldType = (typeId: string) => {
     setSelectedFieldType(typeId);
@@ -68,33 +71,25 @@ export default function FieldConfiguration() {
     setSelectedFieldType(null);
   };
 
-  const handleSaveField = (fieldData: any) => {
+  const handleSaveField = async (fieldData: any) => {
     if (selectedFieldId) {
-      // Update existing field
-      setFields(fields.map(field => 
-        field.id === selectedFieldId ? {...field, ...fieldData} : field
-      ));
+      // Update existing field - not implemented yet
       toast({
         title: "Field updated",
         description: `The field "${fieldData.name}" has been updated.`,
       });
     } else {
       // Add new field
-      const newField = {
-        id: `field-${Date.now()}`,
+      createFieldMutation.mutate({
         ...fieldData,
         type: selectedFieldType
-      };
-      setFields([...fields, newField]);
+      });
+      
       toast({
         title: "Field created",
         description: `The field "${fieldData.name}" has been created.`,
       });
     }
-    
-    // Reset selection
-    setSelectedFieldId(null);
-    setSelectedFieldType(null);
   };
 
   return (
@@ -102,10 +97,8 @@ export default function FieldConfiguration() {
       <div className="p-6 md:p-10">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <a href="/collections">
-                <ArrowLeft className="h-5 w-5" />
-              </a>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/collections')}>
+              <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
               <h1 className="text-2xl font-bold mb-1">Field Configuration</h1>
@@ -160,11 +153,17 @@ export default function FieldConfiguration() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <FieldList 
-                    fields={fields} 
-                    onSelectField={selectField} 
-                    selectedFieldId={selectedFieldId}
-                  />
+                  {isLoading ? (
+                    <p className="text-center py-4 text-gray-500">Loading fields...</p>
+                  ) : error ? (
+                    <p className="text-center py-4 text-red-500">Error loading fields</p>
+                  ) : (
+                    <FieldList 
+                      fields={fields} 
+                      onSelectField={selectField} 
+                      selectedFieldId={selectedFieldId}
+                    />
+                  )}
                 </CardContent>
               </Card>
               

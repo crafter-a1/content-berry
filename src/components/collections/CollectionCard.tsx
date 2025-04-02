@@ -57,7 +57,7 @@ export function CollectionCard({
                 <Link to={`/collections/${id}/fields`}>Configure Fields</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to={`/content/${id}`}>View Content</Link>
+                <Link to={`/content?collection=${id}`}>View Content</Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -106,7 +106,7 @@ export function CollectionCard({
           <Link to={`/collections/${id}/fields`}>Configure</Link>
         </Button>
         <Button variant="outline" size="sm" asChild>
-          <Link to={`/content/${id}`}>View Content</Link>
+          <Link to={`/content?collection=${id}`}>View Content</Link>
         </Button>
       </div>
     </div>

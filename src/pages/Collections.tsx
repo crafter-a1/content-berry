@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { CollectionGrid } from '@/components/collections/CollectionGrid';
 import { Button } from '@/components/ui/button';
@@ -21,86 +22,42 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { toast } from '@/hooks/use-toast';
-
-// Define a proper type for the Collection
-interface Collection {
-  id: string;
-  title: string;
-  icon: string;
-  iconColor: string;
-  fields: number;
-  items?: number;
-  lastUpdated: string;
-  status: 'published' | 'draft';
-}
-
-// Initial collections data with proper typing
-const initialCollections: Collection[] = [
-  {
-    id: "products",
-    title: "Products",
-    icon: "P",
-    iconColor: "blue",
-    fields: 8,
-    items: 12,
-    lastUpdated: "2 hours ago",
-    status: "published" as const
-  },
-  {
-    id: "blog-posts",
-    title: "Blog Posts",
-    icon: "B",
-    iconColor: "green",
-    fields: 12,
-    items: 36,
-    lastUpdated: "1 day ago",
-    status: "published" as const
-  },
-  {
-    id: "users",
-    title: "Users",
-    icon: "U",
-    iconColor: "orange",
-    fields: 6,
-    items: 128,
-    lastUpdated: "3 days ago",
-    status: "published" as const
-  },
-  {
-    id: "events",
-    title: "Events",
-    icon: "E",
-    iconColor: "purple",
-    fields: 10,
-    items: 18,
-    lastUpdated: "1 week ago",
-    status: "draft" as const
-  },
-  {
-    id: "testimonials",
-    title: "Testimonials",
-    icon: "T",
-    iconColor: "teal",
-    fields: 5,
-    items: 24,
-    lastUpdated: "2 weeks ago",
-    status: "draft" as const
-  }
-];
+import { fetchCollections, createCollection, Collection } from '@/services/CollectionService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export default function Collections() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortOption, setSortOption] = useState('latest');
-  const [collections, setCollections] = useState<Collection[]>(initialCollections);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
+  
+  // Fetch collections using React Query
+  const { data: collections = [], isLoading, error } = useQuery({
+    queryKey: ['collections'],
+    queryFn: fetchCollections
+  });
+  
+  // Create collection mutation
+  const createCollectionMutation = useMutation({
+    mutationFn: createCollection,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['collections'] });
+      setIsDialogOpen(false);
+    }
+  });
   
   // Handler for when a new collection is created
-  const handleCollectionCreated = (newCollection: Collection) => {
-    setCollections(prevCollections => [...prevCollections, newCollection]);
+  const handleCollectionCreated = async (formData: any) => {
+    createCollectionMutation.mutate({
+      name: formData.name,
+      apiId: formData.apiId,
+      description: formData.description
+    });
+    
     toast({
-      title: "Collection added",
-      description: `${newCollection.title} has been added to your collections`,
+      title: "Collection created",
+      description: `Successfully created ${formData.name} collection`,
     });
   };
 
@@ -190,14 +147,24 @@ export default function Collections() {
           </div>
         </div>
         
-        <CollectionGrid 
-          collections={filteredCollections} 
-          viewMode={viewMode}
-          sortOption={sortOption}
-          onCreateNew={() => setIsDialogOpen(true)}
-        />
+        {isLoading ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500">Loading collections...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-red-500">Error loading collections. Please try again.</p>
+          </div>
+        ) : (
+          <CollectionGrid 
+            collections={filteredCollections} 
+            viewMode={viewMode}
+            sortOption={sortOption}
+            onCreateNew={() => setIsDialogOpen(true)}
+          />
+        )}
         
-        {filteredCollections.length === 0 && searchQuery === '' && (
+        {!isLoading && filteredCollections.length === 0 && searchQuery === '' && (
           <div className="text-center mt-12">
             <p className="text-gray-500 mb-4">No collections found. Create your first collection to get started.</p>
             <Button 
@@ -210,7 +177,7 @@ export default function Collections() {
           </div>
         )}
         
-        {filteredCollections.length === 0 && searchQuery !== '' && (
+        {!isLoading && filteredCollections.length === 0 && searchQuery !== '' && (
           <div className="text-center mt-12">
             <p className="text-gray-500">No collections matching "{searchQuery}"</p>
             <Button 
