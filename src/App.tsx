@@ -13,6 +13,7 @@ import Components from "./pages/Components";
 import Content from "./pages/Content";
 import Api from "./pages/Api";
 import Users from "./pages/Users";
+import FieldConfiguration from "./pages/FieldConfiguration";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<Dashboard />} />
           <Route path="/collections" element={<Collections />} />
+          <Route path="/collections/:collectionId/fields" element={<FieldConfiguration />} />
           <Route path="/components" element={<Components />} />
           <Route path="/content" element={<Content />} />
           <Route path="/api" element={<Api />} />
