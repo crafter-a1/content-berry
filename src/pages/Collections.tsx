@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { CollectionGrid } from '@/components/collections/CollectionGrid';
@@ -22,6 +21,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 
+// Define the collection with proper type for status
 const collections = [
   {
     id: "products",
@@ -31,7 +31,7 @@ const collections = [
     fields: 8,
     items: 12,
     lastUpdated: "2 hours ago",
-    status: "published"
+    status: "published" as const
   },
   {
     id: "blog-posts",
@@ -41,7 +41,7 @@ const collections = [
     fields: 12,
     items: 36,
     lastUpdated: "1 day ago",
-    status: "published"
+    status: "published" as const
   },
   {
     id: "users",
@@ -51,7 +51,7 @@ const collections = [
     fields: 6,
     items: 128,
     lastUpdated: "3 days ago",
-    status: "published"
+    status: "published" as const
   },
   {
     id: "events",
@@ -61,7 +61,7 @@ const collections = [
     fields: 10,
     items: 18,
     lastUpdated: "1 week ago",
-    status: "draft"
+    status: "draft" as const
   },
   {
     id: "testimonials",
@@ -71,7 +71,7 @@ const collections = [
     fields: 5,
     items: 24,
     lastUpdated: "2 weeks ago",
-    status: "draft"
+    status: "draft" as const
   }
 ];
 
