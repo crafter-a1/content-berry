@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -18,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { CirclePlus, Database } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DialogClose } from '@/components/ui/dialog';
 
 const collectionFormSchema = z.object({
   name: z.string().min(2, {
@@ -39,7 +39,11 @@ const defaultValues: Partial<CollectionFormValues> = {
   description: "",
 };
 
-export function CollectionForm() {
+interface CollectionFormProps {
+  onCollectionCreated?: (collection: any) => void;
+}
+
+export function CollectionForm({ onCollectionCreated }: CollectionFormProps) {
   const [step, setStep] = useState<'basics' | 'advanced'>('basics');
   
   const form = useForm<CollectionFormValues>({
@@ -48,13 +52,38 @@ export function CollectionForm() {
   });
 
   function onSubmit(data: CollectionFormValues) {
+    // Create a new collection object with the form data
+    const newCollection = {
+      id: data.apiId,
+      title: data.name,
+      icon: data.name.charAt(0).toUpperCase(),
+      iconColor: getRandomColor(),
+      fields: 0,
+      items: 0,
+      lastUpdated: "Just now",
+      status: "draft" as const
+    };
+
+    // Call the onCollectionCreated callback with the new collection
+    if (onCollectionCreated) {
+      onCollectionCreated(newCollection);
+    }
+
     toast({
       title: "Collection created",
       description: `Successfully created ${data.name} collection`,
     });
+    
     console.log(data);
-    // Here you would typically call an API to create the collection
+    // Reset the form
+    form.reset();
   }
+
+  // Function to generate a random color for the collection icon
+  const getRandomColor = () => {
+    const colors = ['blue', 'green', 'orange', 'purple', 'teal'];
+    return colors[Math.floor(Math.random() * colors.length)];
+  };
 
   // Auto-generate API ID from name
   const autoGenerateApiId = (name: string) => {
@@ -157,13 +186,17 @@ export function CollectionForm() {
         </Tabs>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-end pt-4">
-          <Button type="button" variant="outline">
-            Cancel
-          </Button>
-          <Button type="submit" className="bg-cms-blue hover:bg-blue-700">
-            <CirclePlus className="mr-2 h-4 w-4" />
-            Create Collection
-          </Button>
+          <DialogClose asChild>
+            <Button type="button" variant="outline">
+              Cancel
+            </Button>
+          </DialogClose>
+          <DialogClose asChild>
+            <Button type="submit" className="bg-cms-blue hover:bg-blue-700">
+              <CirclePlus className="mr-2 h-4 w-4" />
+              Create Collection
+            </Button>
+          </DialogClose>
         </div>
       </form>
     </Form>

@@ -20,9 +20,22 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
+import { toast } from '@/hooks/use-toast';
 
-// Define the collection with proper type for status
-const collections = [
+// Define a proper type for the Collection
+interface Collection {
+  id: string;
+  title: string;
+  icon: string;
+  iconColor: string;
+  fields: number;
+  items?: number;
+  lastUpdated: string;
+  status: 'published' | 'draft';
+}
+
+// Initial collections data with proper typing
+const initialCollections: Collection[] = [
   {
     id: "products",
     title: "Products",
@@ -79,7 +92,18 @@ export default function Collections() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortOption, setSortOption] = useState('latest');
+  const [collections, setCollections] = useState<Collection[]>(initialCollections);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   
+  // Handler for when a new collection is created
+  const handleCollectionCreated = (newCollection: Collection) => {
+    setCollections(prevCollections => [...prevCollections, newCollection]);
+    toast({
+      title: "Collection added",
+      description: `${newCollection.title} has been added to your collections`,
+    });
+  };
+
   const filteredCollections = collections.filter(collection => 
     collection.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -93,7 +117,7 @@ export default function Collections() {
             <p className="text-gray-500">Manage your content structure and data models</p>
           </div>
           
-          <Dialog>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="bg-cms-blue hover:bg-blue-700 mt-4 md:mt-0">
                 <Plus className="mr-2 h-4 w-4" />
@@ -107,7 +131,7 @@ export default function Collections() {
                   Define the structure for a new type of content in your CMS.
                 </DialogDescription>
               </DialogHeader>
-              <CollectionForm />
+              <CollectionForm onCollectionCreated={handleCollectionCreated} />
             </DialogContent>
           </Dialog>
         </div>
@@ -170,7 +194,34 @@ export default function Collections() {
           collections={filteredCollections} 
           viewMode={viewMode}
           sortOption={sortOption}
+          onCreateNew={() => setIsDialogOpen(true)}
         />
+        
+        {filteredCollections.length === 0 && searchQuery === '' && (
+          <div className="text-center mt-12">
+            <p className="text-gray-500 mb-4">No collections found. Create your first collection to get started.</p>
+            <Button 
+              onClick={() => setIsDialogOpen(true)}
+              className="bg-cms-blue hover:bg-blue-700"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Create Collection
+            </Button>
+          </div>
+        )}
+        
+        {filteredCollections.length === 0 && searchQuery !== '' && (
+          <div className="text-center mt-12">
+            <p className="text-gray-500">No collections matching "{searchQuery}"</p>
+            <Button 
+              variant="ghost" 
+              onClick={() => setSearchQuery('')}
+              className="mt-2"
+            >
+              Clear Search
+            </Button>
+          </div>
+        )}
       </div>
     </MainLayout>
   );

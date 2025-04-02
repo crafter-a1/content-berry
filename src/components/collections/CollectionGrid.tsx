@@ -17,9 +17,10 @@ interface CollectionGridProps {
   collections: Collection[];
   viewMode: 'grid' | 'list';
   sortOption: string;
+  onCreateNew?: () => void;
 }
 
-export function CollectionGrid({ collections, viewMode, sortOption }: CollectionGridProps) {
+export function CollectionGrid({ collections, viewMode, sortOption, onCreateNew }: CollectionGridProps) {
   // Sort collections based on the selected option
   const sortedCollections = [...collections].sort((a, b) => {
     if (sortOption === 'alphabetical') {
@@ -78,7 +79,10 @@ export function CollectionGrid({ collections, viewMode, sortOption }: Collection
         />
       ))}
       
-      <div className="bg-gray-50 rounded-lg border border-dashed border-gray-300 flex flex-col items-center justify-center p-6 min-h-[200px] hover:bg-gray-100 transition-colors cursor-pointer">
+      <div 
+        className="bg-gray-50 rounded-lg border border-dashed border-gray-300 flex flex-col items-center justify-center p-6 min-h-[200px] hover:bg-gray-100 transition-colors cursor-pointer"
+        onClick={onCreateNew}
+      >
         <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
           <span className="text-2xl text-gray-400">+</span>
         </div>
