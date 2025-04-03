@@ -39,9 +39,9 @@ export async function fetchCollections(): Promise<Collection[]> {
       throw collectionsError;
     }
 
-    // Count fields per collection using a separate query for each collection
-    const fieldCounts = {};
-    for (const collection of collectionsData) {
+    // Count fields per collection
+    const fieldCounts: Record<string, number> = {};
+    for (const collection of collectionsData || []) {
       const { count, error } = await supabase
         .from('fields')
         .select('*', { count: 'exact', head: false })
@@ -55,8 +55,8 @@ export async function fetchCollections(): Promise<Collection[]> {
     }
 
     // Count content items per collection
-    const contentCounts = {};
-    for (const collection of collectionsData) {
+    const contentCounts: Record<string, number> = {};
+    for (const collection of collectionsData || []) {
       const { count, error } = await supabase
         .from('content_items')
         .select('*', { count: 'exact', head: false })
@@ -70,7 +70,7 @@ export async function fetchCollections(): Promise<Collection[]> {
     }
 
     // Map the data to our Collection interface
-    return collectionsData.map((collection) => ({
+    return (collectionsData || []).map((collection) => ({
       id: collection.id,
       title: collection.title,
       apiId: collection.api_id,
@@ -82,8 +82,8 @@ export async function fetchCollections(): Promise<Collection[]> {
       items: contentCounts[collection.id] || 0,
       lastUpdated: new Date(collection.updated_at).toLocaleDateString(),
       // Handle settings and permissions that might not exist in the database
-      settings: (collection as any).settings || {},
-      permissions: (collection as any).permissions || []
+      settings: collection.settings || {},
+      permissions: collection.permissions || []
     }));
   } catch (error) {
     console.error('Error fetching collections:', error);
@@ -104,18 +104,8 @@ export async function createCollection(params: CreateCollectionParams): Promise<
   try {
     const { name, apiId, description = '', status = 'published', settings = {}, permissions = [] } = params;
     
-    // First, let's find out if the collections table has the settings and permissions columns
-    const { data: columnsData, error: columnsError } = await supabase
-      .from('collections')
-      .select('*')
-      .limit(1);
-      
-    if (columnsError) {
-      console.error('Error checking collection columns:', columnsError);
-    }
-    
-    // Create the insert object based on available columns
-    const insertObj: any = { 
+    // Create the insert object
+    const insertObj = { 
       title: name, 
       api_id: apiId, 
       description, 
@@ -124,18 +114,7 @@ export async function createCollection(params: CreateCollectionParams): Promise<
       icon_color: 'blue'
     };
     
-    // Only add these properties if they exist in the database schema
-    if (columnsData && columnsData.length > 0) {
-      const sampleRow = columnsData[0];
-      if ('settings' in sampleRow || (sampleRow as any).settings !== undefined) {
-        insertObj.settings = settings;
-      }
-      if ('permissions' in sampleRow || (sampleRow as any).permissions !== undefined) {
-        insertObj.permissions = permissions;
-      }
-    }
-    
-    const { data, error } = await supabase
+    const { data: newCollection, error } = await supabase
       .from('collections')
       .insert([insertObj])
       .select()
@@ -145,22 +124,25 @@ export async function createCollection(params: CreateCollectionParams): Promise<
       throw error;
     }
     
+    if (!newCollection) {
+      throw new Error('Failed to create collection - no data returned');
+    }
+
     return {
-      id: data.id,
-      title: data.title,
-      apiId: data.api_id,
-      description: data.description || '',
-      icon: data.icon || 'C',
-      iconColor: data.icon_color || 'blue',
-      status: data.status as 'published' | 'draft',
+      id: newCollection.id,
+      title: newCollection.title,
+      apiId: newCollection.api_id,
+      description: newCollection.description || '',
+      icon: newCollection.icon || 'C',
+      iconColor: newCollection.icon_color || 'blue',
+      status: newCollection.status as 'published' | 'draft',
       fields: 0,
       items: 0,
-      lastUpdated: new Date(data.updated_at).toLocaleDateString(),
-      // Handle settings and permissions that might not exist in the database
-      settings: (data as any).settings || {},
-      permissions: (data as any).permissions || []
+      lastUpdated: new Date(newCollection.updated_at).toLocaleDateString(),
+      settings: newCollection.settings || {},
+      permissions: newCollection.permissions || []
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating collection:', error);
     toast({
       title: 'Failed to create collection',
@@ -282,6 +264,17 @@ export async function getFieldsForCollection(collectionId: string): Promise<Fiel
 
 export async function createField(collectionId: string, fieldData: any): Promise<Field> {
   try {
+    // Check if collection exists
+    const { data: collection, error: collectionError } = await supabase
+      .from('collections')
+      .select('id')
+      .eq('id', collectionId)
+      .single();
+
+    if (collectionError || !collection) {
+      throw new Error(`Collection with ID ${collectionId} not found`);
+    }
+
     // We'll store most of the custom field props in the settings JSON column
     const fieldSettings: FieldSettings = {
       default_value: fieldData.default_value || null,
@@ -291,7 +284,7 @@ export async function createField(collectionId: string, fieldData: any): Promise
       ui_options: fieldData.ui_options || null
     };
 
-    const { data, error } = await supabase
+    const { data: field, error } = await supabase
       .from('fields')
       .insert([
         {
@@ -312,26 +305,30 @@ export async function createField(collectionId: string, fieldData: any): Promise
       throw error;
     }
 
+    if (!field) {
+      throw new Error('Failed to create field - no data returned');
+    }
+
     return {
-      id: data.id,
-      name: data.name,
-      api_id: data.api_id,
-      type: data.type,
-      collection_id: data.collection_id,
-      description: data.description || '',
-      label: data.name, // Using name as label
+      id: field.id,
+      name: field.name,
+      api_id: field.api_id,
+      type: field.type,
+      collection_id: field.collection_id,
+      description: field.description || '',
+      label: field.name, // Using name as label
       placeholder: '',
       default_value: fieldSettings.default_value,
       validation: fieldSettings.validation,
       options: fieldSettings.options,
       is_hidden: fieldSettings.is_hidden,
-      position: data.sort_order || 0,
-      required: data.required || false,
+      position: field.sort_order || 0,
+      required: field.required || false,
       ui_options: fieldSettings.ui_options,
-      config: data.settings || {},
-      order: data.sort_order || 0
+      config: field.settings || {},
+      order: field.sort_order || 0
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating field:', error);
     throw error;
   }

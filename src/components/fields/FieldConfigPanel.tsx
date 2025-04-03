@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -18,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { FieldAppearancePanel } from "./FieldAppearancePanel";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Base schema for all field types
 const baseFieldSchema = z.object({
@@ -53,17 +53,35 @@ const numberFieldSchema = baseFieldSchema.extend({
     max: z.number().optional(),
     step: z.number().optional(),
     defaultValue: z.number().optional(),
-    placeholder: z.string().optional(),
+    prefix: z.string().optional(),
+    suffix: z.string().optional(),
+    locale: z.string().optional(),
+    currency: z.string().optional(),
+    showButtons: z.boolean().optional(),
+    buttonLayout: z.enum(["horizontal", "vertical"]).optional(),
+    floatLabel: z.boolean().optional(),
+    filled: z.boolean().optional(),
   }),
 });
 
 // Date field specific schema
 const dateFieldSchema = baseFieldSchema.extend({
   settings: z.object({
+    dateFormat: z.string().optional(),
     minDate: z.string().optional(),
     maxDate: z.string().optional(),
     defaultToday: z.boolean().optional(),
-    format: z.string().optional(),
+    locale: z.string().optional(),
+    allowMultipleSelection: z.boolean().optional(),
+    allowRangeSelection: z.boolean().optional(),
+    showButtonBar: z.boolean().optional(),
+    includeTimePicker: z.boolean().optional(),
+    monthPickerOnly: z.boolean().optional(),
+    yearPickerOnly: z.boolean().optional(),
+    showMultipleMonths: z.boolean().optional(),
+    inlineMode: z.boolean().optional(),
+    filledStyle: z.boolean().optional(),
+    floatingLabel: z.boolean().optional(),
   }),
 });
 
@@ -154,17 +172,35 @@ export function FieldConfigPanel({ fieldType, fieldData, onSave, onCancel }: Fie
             max: 100,
             step: 1,
             defaultValue: 0,
-            placeholder: "Enter a number",
+            prefix: "",
+            suffix: "",
+            locale: "en-US",
+            currency: "",
+            showButtons: false,
+            buttonLayout: "horizontal",
+            floatLabel: false,
+            filled: false,
           }
         };
       case 'date':
         return {
           ...baseDefaults,
           settings: {
+            dateFormat: "yyyy-MM-dd",
             minDate: "",
             maxDate: "",
             defaultToday: false,
-            format: "yyyy-MM-dd",
+            locale: "en-US",
+            allowMultipleSelection: false,
+            allowRangeSelection: false,
+            showButtonBar: false,
+            includeTimePicker: false,
+            monthPickerOnly: false,
+            yearPickerOnly: false,
+            showMultipleMonths: false,
+            inlineMode: false,
+            filledStyle: false,
+            floatingLabel: false,
           }
         };
       case 'boolean':
@@ -347,21 +383,109 @@ export function FieldConfigPanel({ fieldType, fieldData, onSave, onCancel }: Fie
                 </FormItem>
               )}
             />
-          </>
-        );
-      
-      case 'date':
-        return (
-          <>
+
             <FormField
               control={form.control}
-              name="settings.defaultToday"
+              name="settings.prefix"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Prefix</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Text or symbol to display before the number (e.g., "$")
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="settings.suffix"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Suffix</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Text or symbol to display after the number (e.g., "kg")
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="settings.locale"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Locale</FormLabel>
+                  <FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select locale" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en-US">English (US)</SelectItem>
+                        <SelectItem value="en-GB">English (UK)</SelectItem>
+                        <SelectItem value="fr-FR">French</SelectItem>
+                        <SelectItem value="de-DE">German</SelectItem>
+                        <SelectItem value="ja-JP">Japanese</SelectItem>
+                        <SelectItem value="zh-CN">Chinese</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormDescription>
+                    The locale to use for number formatting
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="settings.currency"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Currency</FormLabel>
+                  <FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select currency (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="USD">US Dollar ($)</SelectItem>
+                        <SelectItem value="EUR">Euro (€)</SelectItem>
+                        <SelectItem value="GBP">British Pound (£)</SelectItem>
+                        <SelectItem value="JPY">Japanese Yen (¥)</SelectItem>
+                        <SelectItem value="CNY">Chinese Yuan (¥)</SelectItem>
+                        <SelectItem value="INR">Indian Rupee (₹)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormDescription>
+                    Format the number as currency
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="settings.showButtons"
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                   <div className="space-y-0.5">
-                    <FormLabel>Default to today</FormLabel>
+                    <FormLabel>Show Buttons</FormLabel>
                     <FormDescription>
-                      Use the current date as default value
+                      Display increment/decrement buttons
                     </FormDescription>
                   </div>
                   <FormControl>
@@ -373,20 +497,305 @@ export function FieldConfigPanel({ fieldType, fieldData, onSave, onCancel }: Fie
                 </FormItem>
               )}
             />
-            
+
+            {form.watch("settings.showButtons") && (
+              <FormField
+                control={form.control}
+                name="settings.buttonLayout"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Button Layout</FormLabel>
+                    <FormControl>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select button layout" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="horizontal">Horizontal</SelectItem>
+                          <SelectItem value="vertical">Vertical</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormDescription>
+                      Layout orientation for the buttons
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+          </>
+        );
+      
+      case 'date':
+        return (
+          <>
             <FormField
               control={form.control}
-              name="settings.format"
+              name="settings.dateFormat"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Date Format</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select date format" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="yyyy-MM-dd">yyyy-MM-dd</SelectItem>
+                        <SelectItem value="MM/dd/yyyy">MM/dd/yyyy</SelectItem>
+                        <SelectItem value="dd/MM/yyyy">dd/MM/yyyy</SelectItem>
+                        <SelectItem value="dd-MMM-yyyy">dd-MMM-yyyy</SelectItem>
+                        <SelectItem value="MMMM d, yyyy">MMMM d, yyyy</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </FormControl>
                   <FormDescription>
-                    Format for displaying and storing dates (e.g., yyyy-MM-dd)
+                    Format for displaying and storing dates
                   </FormDescription>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="settings.locale"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Locale</FormLabel>
+                  <FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select locale" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en-US">English (US)</SelectItem>
+                        <SelectItem value="en-GB">English (UK)</SelectItem>
+                        <SelectItem value="fr-FR">French</SelectItem>
+                        <SelectItem value="de-DE">German</SelectItem>
+                        <SelectItem value="ja-JP">Japanese</SelectItem>
+                        <SelectItem value="zh-CN">Chinese</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormDescription>
+                    The locale to use for date formatting
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="settings.defaultToday"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Default to Today</FormLabel>
+                    <FormDescription>
+                      Use current date as default value
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="settings.allowMultipleSelection"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Allow Multiple Selection</FormLabel>
+                    <FormDescription>
+                      Enable selection of multiple individual dates
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={(checked) => {
+                        field.onChange(checked);
+                        if (checked) {
+                          // Disable range selection if multiple selection is enabled
+                          form.setValue("settings.allowRangeSelection", false);
+                        }
+                      }}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="settings.allowRangeSelection"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Allow Range Selection</FormLabel>
+                    <FormDescription>
+                      Enable selection of a date range
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={(checked) => {
+                        field.onChange(checked);
+                        if (checked) {
+                          // Disable multiple selection if range selection is enabled
+                          form.setValue("settings.allowMultipleSelection", false);
+                        }
+                      }}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="settings.showButtonBar"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Show Button Bar</FormLabel>
+                    <FormDescription>
+                      Display "Today" and "Clear" buttons
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="settings.includeTimePicker"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Include Time Picker</FormLabel>
+                    <FormDescription>
+                      Allow time selection along with date
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="settings.monthPickerOnly"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Month Picker Only</FormLabel>
+                    <FormDescription>
+                      Allow only month selection
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={(checked) => {
+                        field.onChange(checked);
+                        if (checked) {
+                          // Disable year picker if month picker is enabled
+                          form.setValue("settings.yearPickerOnly", false);
+                        }
+                      }}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="settings.yearPickerOnly"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Year Picker Only</FormLabel>
+                    <FormDescription>
+                      Allow only year selection
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={(checked) => {
+                        field.onChange(checked);
+                        if (checked) {
+                          // Disable month picker if year picker is enabled
+                          form.setValue("settings.monthPickerOnly", false);
+                        }
+                      }}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="settings.showMultipleMonths"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Show Multiple Months</FormLabel>
+                    <FormDescription>
+                      Display two months side by side
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="settings.inlineMode"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Inline Mode</FormLabel>
+                    <FormDescription>
+                      Always visible calendar without input box
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
                 </FormItem>
               )}
             />

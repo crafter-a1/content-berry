@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -20,7 +19,7 @@ const fieldTypes = {
   'Text & Numbers': [
     { id: 'text', name: 'Input', description: 'Single line text field' },
     { id: 'textarea', name: 'Textarea', description: 'Multi-line text field' },
-    { id: 'number', name: 'Number', description: 'Numeric field with validation' },
+    { id: 'number', name: 'Number', description: 'Numeric field with validation and formatting' },
     { id: 'password', name: 'Password', description: 'Secure password input with toggle' },
     { id: 'mask', name: 'Input Mask', description: 'Input with formatting mask' },
     { id: 'otp', name: 'Input OTP', description: 'One-time password input' },
@@ -47,7 +46,7 @@ const fieldTypes = {
     { id: 'treeselect', name: 'Checkboxes (Tree)', description: 'Hierarchical checkbox selection' },
     { id: 'listbox', name: 'List Box', description: 'Scrollable selection list' },
     { id: 'mention', name: 'Mention Box', description: 'Text input with @mentions' },
-    { id: 'date', name: 'Datetime', description: 'Date and time picker' },
+    { id: 'date', name: 'Date/Calendar', description: 'Advanced date and time picker' },
     { id: 'color', name: 'Color', description: 'Color picker field' },
     { id: 'colorpicker', name: 'Color Picker', description: 'Advanced color selection tool' },
     { id: 'icon', name: 'Icon', description: 'Icon selection from a library' },
@@ -94,7 +93,9 @@ const fieldTypes = {
 };
 
 // Flatten the categories for mutation handling
-const flatFieldTypes = Object.values(fieldTypes).flat();
+const flatFieldTypes = Object.entries(fieldTypes).flatMap(([category, types]) => 
+  types.map(type => ({ ...type, group: category }))
+);
 
 export default function FieldConfiguration() {
   const { collectionId } = useParams<{ collectionId: string }>();
