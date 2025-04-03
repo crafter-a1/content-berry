@@ -33,6 +33,8 @@ export function adaptNumberFieldSettings(settings: {
   floatLabel?: boolean;
   filled?: boolean;
   accessibilityLabel?: string;
+  disabled?: boolean;
+  invalid?: boolean;
 }) {
   return {
     min: settings.min ?? 0,
@@ -48,6 +50,8 @@ export function adaptNumberFieldSettings(settings: {
     floatLabel: settings.floatLabel ?? false,
     filled: settings.filled ?? false,
     accessibilityLabel: settings.accessibilityLabel ?? '',
+    disabled: settings.disabled ?? false,
+    invalid: settings.invalid ?? false,
   };
 }
 

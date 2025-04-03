@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/accordion";
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { adaptCollectionFormData } from '@/utils/formAdapters';
+import { adaptCollectionFormData, adaptNumberFieldSettings } from '@/utils/formAdapters';
 import { CollectionFormData } from '@/services/CollectionService';
 import { Plus, Trash2 } from 'lucide-react';
 
@@ -142,6 +142,30 @@ export function NewCollectionForm({ onCollectionCreated, onClose }: NewCollectio
       form.setValue(`fields.${index}.apiId`, apiId);
     }
   };
+
+  // Create a list of available locales for the dropdown
+  const availableLocales = [
+    { label: 'English (US)', value: 'en-US' },
+    { label: 'English (UK)', value: 'en-GB' },
+    { label: 'French', value: 'fr-FR' },
+    { label: 'German', value: 'de-DE' },
+    { label: 'Spanish', value: 'es-ES' },
+    { label: 'Japanese', value: 'ja-JP' },
+    { label: 'Chinese', value: 'zh-CN' },
+  ];
+
+  // Create a list of common currencies for the dropdown
+  const availableCurrencies = [
+    { label: 'US Dollar ($)', value: 'USD' },
+    { label: 'Euro (€)', value: 'EUR' },
+    { label: 'British Pound (£)', value: 'GBP' },
+    { label: 'Japanese Yen (¥)', value: 'JPY' },
+    { label: 'Canadian Dollar (C$)', value: 'CAD' },
+    { label: 'Australian Dollar (A$)', value: 'AUD' },
+    { label: 'Swiss Franc (CHF)', value: 'CHF' },
+    { label: 'Indian Rupee (₹)', value: 'INR' },
+    { label: 'Chinese Yuan (¥)', value: 'CNY' },
+  ];
 
   return (
     <Form {...form}>
@@ -425,6 +449,47 @@ export function NewCollectionForm({ onCollectionCreated, onClose }: NewCollectio
                             <div className="grid grid-cols-2 gap-4">
                               <FormField
                                 control={form.control}
+                                name={`fields.${index}.settings.step`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Step</FormLabel>
+                                    <FormControl>
+                                      <Input 
+                                        type="number" 
+                                        {...field} 
+                                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 1)}
+                                        placeholder="1"
+                                      />
+                                    </FormControl>
+                                    <FormDescription>
+                                      Increment/decrement step value
+                                    </FormDescription>
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={form.control}
+                                name={`fields.${index}.settings.defaultValue`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Default Value</FormLabel>
+                                    <FormControl>
+                                      <Input 
+                                        type="number" 
+                                        {...field} 
+                                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                        placeholder="0"
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                              <FormField
+                                control={form.control}
                                 name={`fields.${index}.settings.prefix`}
                                 render={({ field }) => (
                                   <FormItem>
@@ -432,6 +497,9 @@ export function NewCollectionForm({ onCollectionCreated, onClose }: NewCollectio
                                     <FormControl>
                                       <Input {...field} placeholder="e.g. $" />
                                     </FormControl>
+                                    <FormDescription>
+                                      Text shown before the number
+                                    </FormDescription>
                                   </FormItem>
                                 )}
                               />
@@ -445,6 +513,72 @@ export function NewCollectionForm({ onCollectionCreated, onClose }: NewCollectio
                                     <FormControl>
                                       <Input {...field} placeholder="e.g. kg" />
                                     </FormControl>
+                                    <FormDescription>
+                                      Text shown after the number
+                                    </FormDescription>
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                              <FormField
+                                control={form.control}
+                                name={`fields.${index}.settings.locale`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Locale</FormLabel>
+                                    <Select
+                                      onValueChange={field.onChange}
+                                      defaultValue={field.value || "en-US"}
+                                    >
+                                      <FormControl>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select locale" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        {availableLocales.map(locale => (
+                                          <SelectItem key={locale.value} value={locale.value}>
+                                            {locale.label}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <FormDescription>
+                                      Localization for number formatting
+                                    </FormDescription>
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={form.control}
+                                name={`fields.${index}.settings.currency`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Currency</FormLabel>
+                                    <Select
+                                      onValueChange={field.onChange}
+                                      defaultValue={field.value || ""}
+                                    >
+                                      <FormControl>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select currency (optional)" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        <SelectItem value="">None</SelectItem>
+                                        {availableCurrencies.map(currency => (
+                                          <SelectItem key={currency.value} value={currency.value}>
+                                            {currency.label}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <FormDescription>
+                                      Format as currency (optional)
+                                    </FormDescription>
                                   </FormItem>
                                 )}
                               />
@@ -465,6 +599,94 @@ export function NewCollectionForm({ onCollectionCreated, onClose }: NewCollectio
                                       onCheckedChange={field.onChange}
                                     />
                                   </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            
+                            {form.watch(`fields.${index}.settings.showButtons`) && (
+                              <FormField
+                                control={form.control}
+                                name={`fields.${index}.settings.buttonLayout`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Button Layout</FormLabel>
+                                    <Select
+                                      onValueChange={field.onChange}
+                                      defaultValue={field.value || "horizontal"}
+                                    >
+                                      <FormControl>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select button layout" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        <SelectItem value="horizontal">Horizontal</SelectItem>
+                                        <SelectItem value="vertical">Vertical</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    <FormDescription>
+                                      Arrangement of increment/decrement buttons
+                                    </FormDescription>
+                                  </FormItem>
+                                )}
+                              />
+                            )}
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                              <FormField
+                                control={form.control}
+                                name={`fields.${index}.settings.floatLabel`}
+                                render={({ field }) => (
+                                  <FormItem className="flex flex-row items-center justify-between space-x-2 rounded-md border p-3">
+                                    <div>
+                                      <FormLabel>Float Label</FormLabel>
+                                      <FormDescription>Label floats when field is focused</FormDescription>
+                                    </div>
+                                    <FormControl>
+                                      <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={form.control}
+                                name={`fields.${index}.settings.filled`}
+                                render={({ field }) => (
+                                  <FormItem className="flex flex-row items-center justify-between space-x-2 rounded-md border p-3">
+                                    <div>
+                                      <FormLabel>Filled Style</FormLabel>
+                                      <FormDescription>Use filled background style</FormDescription>
+                                    </div>
+                                    <FormControl>
+                                      <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            
+                            <FormField
+                              control={form.control}
+                              name={`fields.${index}.settings.accessibilityLabel`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Accessibility Label</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      {...field} 
+                                      placeholder="e.g. Enter product price"
+                                    />
+                                  </FormControl>
+                                  <FormDescription>
+                                    Label for screen readers (ARIA)
+                                  </FormDescription>
                                 </FormItem>
                               )}
                             />
