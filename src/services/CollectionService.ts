@@ -1,263 +1,338 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import { Json } from '@/integrations/supabase/types';
 
 export interface Collection {
   id: string;
-  api_id: string;
   title: string;
-  description?: string;
+  apiId: string;
+  description: string;
   icon: string;
   iconColor: string;
-  fields: number;
-  items: number;
-  lastUpdated: string;
   status: 'published' | 'draft';
+  fields: number;
+  items?: number;
+  lastUpdated: string;
+  settings?: Json;
+  permissions?: string[];
 }
 
 export interface CollectionFormData {
   name: string;
   apiId: string;
   description?: string;
+  status?: 'published' | 'draft';
+  settings?: Json;
+  permissions?: string[];
 }
 
-// Fetch all collections
-export const fetchCollections = async (): Promise<Collection[]> => {
+export async function fetchCollections(): Promise<Collection[]> {
   try {
-    // Get collections
-    const { data: collections, error: collectionsError } = await supabase
+    // First, get the collections
+    const { data: collectionsData, error: collectionsError } = await supabase
       .from('collections')
-      .select('*');
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (collectionsError) {
+      throw collectionsError;
+    }
+
+    // Count fields per collection using a separate query for each collection
+    const fieldCounts = {};
+    for (const collection of collectionsData) {
+      const { count, error } = await supabase
+        .from('fields')
+        .select('*', { count: 'exact', head: false })
+        .eq('collection_id', collection.id);
       
-    if (collectionsError) throw collectionsError;
-    
-    // Get fields counts
-    const { data: fieldsCount, error: fieldsError } = await supabase
-      .from('fields')
-      .select('collection_id, count')
-      .group('collection_id');
-      
-    if (fieldsError) throw fieldsError;
-    
-    // Get content items counts
-    const { data: itemsCount, error: itemsError } = await supabase
-      .from('content_items')
-      .select('collection_id, count')
-      .group('collection_id');
-      
-    if (itemsError) throw itemsError;
-    
-    // Map to our Collection interface
-    return collections.map(collection => {
-      // Find fields count for this collection
-      const fieldCount = fieldsCount.find(f => f.collection_id === collection.id);
-      // Find items count for this collection
-      const itemCount = itemsCount.find(i => i.collection_id === collection.id);
-      
-      // Format relative time
-      const updatedAt = new Date(collection.updated_at);
-      const now = new Date();
-      const diffInMinutes = Math.floor((now.getTime() - updatedAt.getTime()) / (1000 * 60));
-      
-      let lastUpdated = 'Just now';
-      if (diffInMinutes > 1440) {
-        const days = Math.floor(diffInMinutes / 1440);
-        lastUpdated = `${days} day${days > 1 ? 's' : ''} ago`;
-      } else if (diffInMinutes > 60) {
-        const hours = Math.floor(diffInMinutes / 60);
-        lastUpdated = `${hours} hour${hours > 1 ? 's' : ''} ago`;
-      } else if (diffInMinutes > 1) {
-        lastUpdated = `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+      if (error) {
+        console.error("Error counting fields:", error);
+      } else {
+        fieldCounts[collection.id] = count || 0;
       }
+    }
+
+    // Count content items per collection
+    const contentCounts = {};
+    for (const collection of collectionsData) {
+      const { count, error } = await supabase
+        .from('content_items')
+        .select('*', { count: 'exact', head: false })
+        .eq('collection_id', collection.id);
       
-      return {
-        id: collection.api_id,
-        api_id: collection.api_id,
-        title: collection.title,
-        description: collection.description,
-        icon: collection.icon || collection.title.charAt(0).toUpperCase(),
-        iconColor: collection.icon_color || 'blue',
-        fields: fieldCount ? parseInt(fieldCount.count) : 0,
-        items: itemCount ? parseInt(itemCount.count) : 0,
-        lastUpdated,
-        status: collection.status as 'published' | 'draft'
-      };
-    });
+      if (error) {
+        console.error("Error counting content items:", error);
+      } else {
+        contentCounts[collection.id] = count || 0;
+      }
+    }
+
+    // Map the data to our Collection interface
+    return collectionsData.map((collection) => ({
+      id: collection.id,
+      title: collection.title,
+      apiId: collection.api_id,
+      description: collection.description || '',
+      icon: collection.icon || 'C',
+      iconColor: collection.icon_color || 'blue',
+      status: collection.status as 'published' | 'draft',
+      fields: fieldCounts[collection.id] || 0,
+      items: contentCounts[collection.id] || 0,
+      lastUpdated: new Date(collection.updated_at).toLocaleDateString(),
+      // Handle settings and permissions that might not exist in the database
+      settings: (collection as any).settings || {},
+      permissions: (collection as any).permissions || []
+    }));
   } catch (error) {
     console.error('Error fetching collections:', error);
-    toast({
-      title: "Error fetching collections",
-      description: "Please try again later",
-      variant: "destructive",
-    });
-    return [];
+    throw error;
   }
-};
+}
 
-// Create a new collection
-export const createCollection = async (collectionData: CollectionFormData): Promise<Collection | null> => {
+export interface CreateCollectionParams {
+  name: string;
+  apiId: string;
+  description?: string;
+  status?: 'published' | 'draft';
+  settings?: Json;
+  permissions?: string[];
+}
+
+export async function createCollection(params: CreateCollectionParams): Promise<Collection> {
   try {
-    const { name, apiId, description } = collectionData;
+    const { name, apiId, description = '', status = 'published', settings = {}, permissions = [] } = params;
     
-    // Insert new collection
-    const { data: newCollection, error } = await supabase
+    // First, let's find out if the collections table has the settings and permissions columns
+    const { data: columnsData, error: columnsError } = await supabase
       .from('collections')
-      .insert({
-        api_id: apiId,
-        title: name,
-        description: description || null,
-        icon: name.charAt(0).toUpperCase(),
-        icon_color: getRandomColor(),
-        status: 'draft'
-      })
+      .select('*')
+      .limit(1);
+      
+    if (columnsError) {
+      console.error('Error checking collection columns:', columnsError);
+    }
+    
+    // Create the insert object based on available columns
+    const insertObj: any = { 
+      title: name, 
+      api_id: apiId, 
+      description, 
+      status,
+      icon: 'C',
+      icon_color: 'blue'
+    };
+    
+    // Only add these properties if they exist in the database schema
+    if (columnsData && columnsData.length > 0) {
+      const sampleRow = columnsData[0];
+      if ('settings' in sampleRow || (sampleRow as any).settings !== undefined) {
+        insertObj.settings = settings;
+      }
+      if ('permissions' in sampleRow || (sampleRow as any).permissions !== undefined) {
+        insertObj.permissions = permissions;
+      }
+    }
+    
+    const { data, error } = await supabase
+      .from('collections')
+      .insert([insertObj])
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     
     return {
-      id: newCollection.api_id,
-      api_id: newCollection.api_id,
-      title: newCollection.title,
-      description: newCollection.description,
-      icon: newCollection.icon || newCollection.title.charAt(0).toUpperCase(),
-      iconColor: newCollection.icon_color || 'blue',
+      id: data.id,
+      title: data.title,
+      apiId: data.api_id,
+      description: data.description || '',
+      icon: data.icon || 'C',
+      iconColor: data.icon_color || 'blue',
+      status: data.status as 'published' | 'draft',
       fields: 0,
       items: 0,
-      lastUpdated: 'Just now',
-      status: newCollection.status as 'published' | 'draft'
+      lastUpdated: new Date(data.updated_at).toLocaleDateString(),
+      // Handle settings and permissions that might not exist in the database
+      settings: (data as any).settings || {},
+      permissions: (data as any).permissions || []
     };
   } catch (error) {
     console.error('Error creating collection:', error);
     toast({
-      title: "Error creating collection",
-      description: "Please try again later",
-      variant: "destructive",
+      title: 'Failed to create collection',
+      description: error.message,
+      variant: 'destructive'
     });
-    return null;
+    throw error;
   }
-};
+}
 
-// Get a random color for collection icon
-export const getRandomColor = () => {
-  const colors = ['blue', 'green', 'orange', 'purple', 'teal'];
-  return colors[Math.floor(Math.random() * colors.length)];
-};
+// ContentItem interface matches the structure shown in the provided image
+export interface ContentItem {
+  id: string;
+  collection_id: string;
+  data: any;
+  status: 'published' | 'draft';
+  created_at: string;
+  updated_at: string;
+  user_id?: string;
+  is_published?: boolean;
+  api_id?: string;
+  api_id_plural?: string;
+}
 
-// Get fields for a collection
-export const getFieldsForCollection = async (collectionId: string) => {
+export async function getContentItems(collectionId: string): Promise<ContentItem[]> {
   try {
-    const { data: collection, error: collectionError } = await supabase
-      .from('collections')
+    const { data, error } = await supabase
+      .from('content_items')
       .select('*')
-      .eq('api_id', collectionId)
-      .single();
-      
-    if (collectionError) throw collectionError;
-    
-    const { data: fields, error: fieldsError } = await supabase
-      .from('fields')
-      .select('*')
-      .eq('collection_id', collection.id)
-      .order('sort_order', { ascending: true });
-      
-    if (fieldsError) throw fieldsError;
-    
-    return fields.map(field => ({
-      id: field.api_id,
-      name: field.name,
-      type: field.type,
-      required: field.required,
-      description: field.description,
-      settings: field.settings
+      .eq('collection_id', collectionId);
+
+    if (error) {
+      throw error;
+    }
+
+    return (data || []).map(item => ({
+      ...item,
+      status: item.status as 'published' | 'draft'
     }));
   } catch (error) {
-    console.error('Error fetching fields:', error);
-    toast({
-      title: "Error fetching fields",
-      description: "Please try again later",
-      variant: "destructive",
-    });
-    return [];
+    console.error('Error fetching content items:', error);
+    throw error;
   }
-};
+}
 
-// Create a new field for a collection
-export const createField = async (collectionId: string, fieldData: any) => {
+// Field interface matching the structure shown in the provided image
+export interface Field {
+  id: string;
+  name: string;
+  api_id: string;
+  type: string;
+  collection_id: string;
+  label?: string;
+  description?: string;
+  placeholder?: string;
+  default_value?: any;
+  validation?: any;
+  options?: any;
+  is_hidden?: boolean;
+  position?: number;
+  required: boolean;
+  ui_options?: any;
+  config?: any; // For backward compatibility
+  order?: number; // For backward compatibility
+}
+
+// Field settings interface to properly type the settings
+export interface FieldSettings {
+  default_value?: any;
+  validation?: any;
+  options?: any;
+  is_hidden?: boolean;
+  ui_options?: any;
+  [key: string]: any;
+}
+
+export async function getFieldsForCollection(collectionId: string): Promise<Field[]> {
   try {
-    // First get the collection UUID
-    const { data: collection, error: collectionError } = await supabase
-      .from('collections')
-      .select('id')
-      .eq('api_id', collectionId)
-      .single();
-      
-    if (collectionError) throw collectionError;
-    
-    // Then create the field
-    const { data: field, error: fieldError } = await supabase
+    const { data, error } = await supabase
       .from('fields')
-      .insert({
-        collection_id: collection.id,
-        name: fieldData.name,
-        api_id: fieldData.apiId || fieldData.name.toLowerCase().replace(/\s+/g, '_'),
-        type: fieldData.type,
-        required: fieldData.required || false,
-        description: fieldData.description || null,
-        settings: fieldData.settings || {},
-      })
+      .select('*')
+      .eq('collection_id', collectionId)
+      .order('sort_order', { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    return (data || []).map(field => {
+      // Safely access nested properties
+      const settings = field.settings as FieldSettings || {};
+      
+      return {
+        id: field.id,
+        name: field.name,
+        api_id: field.api_id,
+        type: field.type,
+        collection_id: field.collection_id,
+        description: field.description || '',
+        label: field.name, // Using name as fallback for label
+        placeholder: '',
+        default_value: settings.default_value || null,
+        validation: settings.validation || null,
+        options: settings.options || null,
+        is_hidden: settings.is_hidden || false,
+        position: field.sort_order || 0,
+        required: field.required || false,
+        ui_options: settings.ui_options || null,
+        // For backward compatibility
+        config: field.settings || {},
+        order: field.sort_order || 0
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching fields:', error);
+    throw error;
+  }
+}
+
+export async function createField(collectionId: string, fieldData: any): Promise<Field> {
+  try {
+    // We'll store most of the custom field props in the settings JSON column
+    const fieldSettings: FieldSettings = {
+      default_value: fieldData.default_value || null,
+      validation: fieldData.validation || null,
+      options: fieldData.options || null,
+      is_hidden: fieldData.is_hidden || false,
+      ui_options: fieldData.ui_options || null
+    };
+
+    const { data, error } = await supabase
+      .from('fields')
+      .insert([
+        {
+          collection_id: collectionId,
+          name: fieldData.name,
+          api_id: fieldData.api_id || fieldData.name.toLowerCase().replace(/\s+/g, '_'),
+          type: fieldData.type,
+          description: fieldData.description || '',
+          required: fieldData.required || false,
+          sort_order: fieldData.position || 0,
+          settings: fieldSettings
+        }
+      ])
       .select()
       .single();
-      
-    if (fieldError) throw fieldError;
-    
+
+    if (error) {
+      throw error;
+    }
+
     return {
-      id: field.api_id,
-      name: field.name,
-      type: field.type,
-      required: field.required,
-      description: field.description,
-      settings: field.settings
+      id: data.id,
+      name: data.name,
+      api_id: data.api_id,
+      type: data.type,
+      collection_id: data.collection_id,
+      description: data.description || '',
+      label: data.name, // Using name as label
+      placeholder: '',
+      default_value: fieldSettings.default_value,
+      validation: fieldSettings.validation,
+      options: fieldSettings.options,
+      is_hidden: fieldSettings.is_hidden,
+      position: data.sort_order || 0,
+      required: data.required || false,
+      ui_options: fieldSettings.ui_options,
+      config: data.settings || {},
+      order: data.sort_order || 0
     };
   } catch (error) {
     console.error('Error creating field:', error);
-    toast({
-      title: "Error creating field",
-      description: "Please try again later",
-      variant: "destructive",
-    });
-    return null;
+    throw error;
   }
-};
-
-// Get content items for a collection
-export const getContentItems = async (collectionId: string) => {
-  try {
-    // First get the collection UUID
-    const { data: collection, error: collectionError } = await supabase
-      .from('collections')
-      .select('id')
-      .eq('api_id', collectionId)
-      .single();
-      
-    if (collectionError) throw collectionError;
-    
-    // Then get content items
-    const { data: items, error: itemsError } = await supabase
-      .from('content_items')
-      .select('*')
-      .eq('collection_id', collection.id);
-      
-    if (itemsError) throw itemsError;
-    
-    return items;
-  } catch (error) {
-    console.error('Error fetching content items:', error);
-    toast({
-      title: "Error fetching content",
-      description: "Please try again later",
-      variant: "destructive",
-    });
-    return [];
-  }
-};
+}
