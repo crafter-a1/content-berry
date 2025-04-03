@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -18,6 +19,9 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { FieldAppearancePanel } from "./FieldAppearancePanel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Info } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Base schema for all field types
 const baseFieldSchema = z.object({
@@ -61,6 +65,7 @@ const numberFieldSchema = baseFieldSchema.extend({
     buttonLayout: z.enum(["horizontal", "vertical"]).optional(),
     floatLabel: z.boolean().optional(),
     filled: z.boolean().optional(),
+    accessibilityLabel: z.string().optional(),
   }),
 });
 
@@ -180,6 +185,7 @@ export function FieldConfigPanel({ fieldType, fieldData, onSave, onCancel }: Fie
             buttonLayout: "horizontal",
             floatLabel: false,
             filled: false,
+            accessibilityLabel: "",
           }
         };
       case 'date':
@@ -326,42 +332,44 @@ export function FieldConfigPanel({ fieldType, fieldData, onSave, onCancel }: Fie
       
       case 'number':
         return (
-          <>
-            <FormField
-              control={form.control}
-              name="settings.min"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Minimum Value</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      {...field} 
-                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="settings.max"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Maximum Value</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      {...field} 
-                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="settings.min"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Minimum Value</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        {...field} 
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="settings.max"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Maximum Value</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        {...field} 
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             
             <FormField
               control={form.control}
@@ -386,145 +394,213 @@ export function FieldConfigPanel({ fieldType, fieldData, onSave, onCancel }: Fie
 
             <FormField
               control={form.control}
-              name="settings.prefix"
+              name="settings.defaultValue"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Prefix</FormLabel>
+                  <FormLabel>Default Value</FormLabel>
                   <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Text or symbol to display before the number (e.g., "$")
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="settings.suffix"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Suffix</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Text or symbol to display after the number (e.g., "kg")
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="settings.locale"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Locale</FormLabel>
-                  <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select locale" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="en-US">English (US)</SelectItem>
-                        <SelectItem value="en-GB">English (UK)</SelectItem>
-                        <SelectItem value="fr-FR">French</SelectItem>
-                        <SelectItem value="de-DE">German</SelectItem>
-                        <SelectItem value="ja-JP">Japanese</SelectItem>
-                        <SelectItem value="zh-CN">Chinese</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormDescription>
-                    The locale to use for number formatting
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="settings.currency"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Currency</FormLabel>
-                  <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select currency (optional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">None</SelectItem>
-                        <SelectItem value="USD">US Dollar ($)</SelectItem>
-                        <SelectItem value="EUR">Euro (€)</SelectItem>
-                        <SelectItem value="GBP">British Pound (£)</SelectItem>
-                        <SelectItem value="JPY">Japanese Yen (¥)</SelectItem>
-                        <SelectItem value="CNY">Chinese Yuan (¥)</SelectItem>
-                        <SelectItem value="INR">Indian Rupee (₹)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormDescription>
-                    Format the number as currency
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="settings.showButtons"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <FormLabel>Show Buttons</FormLabel>
-                    <FormDescription>
-                      Display increment/decrement buttons
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
+                    <Input 
+                      type="number" 
+                      {...field} 
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                     />
                   </FormControl>
+                  <FormDescription>
+                    Initial value when creating new content
+                  </FormDescription>
+                  <FormMessage />
                 </FormItem>
               )}
             />
 
-            {form.watch("settings.showButtons") && (
+            <div className="border-t pt-4 mt-6">
+              <h3 className="text-base font-medium mb-4">Display Options</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="settings.prefix"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Prefix</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g. $, €" />
+                      </FormControl>
+                      <FormDescription>
+                        Text or symbol to display before the number
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="settings.suffix"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Suffix</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g. kg, %" />
+                      </FormControl>
+                      <FormDescription>
+                        Text or symbol to display after the number
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <FormField
                 control={form.control}
-                name="settings.buttonLayout"
+                name="settings.locale"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Button Layout</FormLabel>
+                  <FormItem className="mt-4">
+                    <FormLabel>Locale</FormLabel>
                     <FormControl>
                       <Select value={field.value} onValueChange={field.onChange}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select button layout" />
+                          <SelectValue placeholder="Select locale" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="horizontal">Horizontal</SelectItem>
-                          <SelectItem value="vertical">Vertical</SelectItem>
+                          <SelectItem value="en-US">English (US)</SelectItem>
+                          <SelectItem value="en-GB">English (UK)</SelectItem>
+                          <SelectItem value="fr-FR">French</SelectItem>
+                          <SelectItem value="de-DE">German</SelectItem>
+                          <SelectItem value="ja-JP">Japanese</SelectItem>
+                          <SelectItem value="zh-CN">Chinese</SelectItem>
+                          <SelectItem value="es-ES">Spanish</SelectItem>
+                          <SelectItem value="pt-BR">Portuguese (Brazil)</SelectItem>
+                          <SelectItem value="ar-SA">Arabic</SelectItem>
+                          <SelectItem value="hi-IN">Hindi</SelectItem>
                         </SelectContent>
                       </Select>
                     </FormControl>
                     <FormDescription>
-                      Layout orientation for the buttons
+                      The locale to use for number formatting
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            )}
-          </>
+
+              <FormField
+                control={form.control}
+                name="settings.currency"
+                render={({ field }) => (
+                  <FormItem className="mt-4">
+                    <FormLabel>Currency</FormLabel>
+                    <FormControl>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select currency (optional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">None</SelectItem>
+                          <SelectItem value="USD">US Dollar ($)</SelectItem>
+                          <SelectItem value="EUR">Euro (€)</SelectItem>
+                          <SelectItem value="GBP">British Pound (£)</SelectItem>
+                          <SelectItem value="JPY">Japanese Yen (¥)</SelectItem>
+                          <SelectItem value="CNY">Chinese Yuan (¥)</SelectItem>
+                          <SelectItem value="INR">Indian Rupee (₹)</SelectItem>
+                          <SelectItem value="CAD">Canadian Dollar (CA$)</SelectItem>
+                          <SelectItem value="AUD">Australian Dollar (A$)</SelectItem>
+                          <SelectItem value="BRL">Brazilian Real (R$)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormDescription>
+                      Format the number as currency
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="border-t pt-4 mt-6">
+              <h3 className="text-base font-medium mb-4">Button Configuration</h3>
+              
+              <FormField
+                control={form.control}
+                name="settings.showButtons"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Show Buttons</FormLabel>
+                      <FormDescription>
+                        Display increment/decrement buttons
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {form.watch("settings.showButtons") && (
+                <FormField
+                  control={form.control}
+                  name="settings.buttonLayout"
+                  render={({ field }) => (
+                    <FormItem className="mt-4">
+                      <FormLabel>Button Layout</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          className="flex gap-4"
+                        >
+                          <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="horizontal" />
+                            </FormControl>
+                            <FormLabel className="font-normal">Horizontal</FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="vertical" />
+                            </FormControl>
+                            <FormLabel className="font-normal">Vertical</FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormDescription>
+                        Layout orientation for the buttons
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
+            <div className="border-t pt-4 mt-6">
+              <h3 className="text-base font-medium mb-4">Accessibility</h3>
+              
+              <FormField
+                control={form.control}
+                name="settings.accessibilityLabel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Accessibility Label</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="e.g. Enter product price" />
+                    </FormControl>
+                    <FormDescription>
+                      Custom label for screen readers (ARIA label)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
         );
       
       case 'date':
@@ -869,6 +945,114 @@ export function FieldConfigPanel({ fieldType, fieldData, onSave, onCancel }: Fie
     }
   };
 
+  const renderAppearanceSettings = () => {
+    if (!fieldType) return null;
+
+    switch (fieldType) {
+      case 'number':
+        return (
+          <>
+            <div className="space-y-6">
+              <Alert variant="info" className="bg-blue-50 border-blue-100 mb-6">
+                <Info className="h-5 w-5 text-blue-500" />
+                <AlertDescription className="text-blue-700">
+                  Configure the visual appearance of your number field.
+                </AlertDescription>
+              </Alert>
+
+              <FormField
+                control={form.control}
+                name="settings.floatLabel"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Float Label</FormLabel>
+                      <FormDescription>
+                        Label floats above the input when focused or filled
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="settings.filled"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Filled Style</FormLabel>
+                      <FormDescription>
+                        Use filled background style for the input
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="ui_options.placeholder"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Placeholder</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="e.g. Enter a number..." />
+                    </FormControl>
+                    <FormDescription>
+                      Text displayed when the field is empty
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="ui_options.width"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Field Width (%)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        min="25" 
+                        max="100" 
+                        step="25" 
+                        {...field} 
+                        onChange={(e) => field.onChange(parseInt(e.target.value) || 100)}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Width of the field as percentage of container
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </>
+        );
+      case 'date':
+        // Display date-specific appearance settings
+        return <FieldAppearancePanel form={form} fieldType={fieldType} />;
+      default:
+        return <FieldAppearancePanel form={form} fieldType={fieldType} />;
+    }
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
@@ -948,11 +1132,68 @@ export function FieldConfigPanel({ fieldType, fieldData, onSave, onCancel }: Fie
           </TabsContent>
           
           <TabsContent value="appearance" className="space-y-4">
-            <FieldAppearancePanel form={form} fieldType={fieldType} />
+            {fieldType ? renderAppearanceSettings() : (
+              <p className="text-gray-500">Please select a field type first</p>
+            )}
           </TabsContent>
           
           <TabsContent value="advanced" className="space-y-4">
-            <p className="text-gray-500">Advanced settings will be added soon</p>
+            {fieldType === 'number' && (
+              <div className="space-y-4">
+                <Alert variant="info" className="bg-blue-50 border-blue-100 mb-6">
+                  <Info className="h-5 w-5 text-blue-500" />
+                  <AlertDescription className="text-blue-700">
+                    Configure advanced settings for the number field.
+                  </AlertDescription>
+                </Alert>
+              
+                <FormField
+                  control={form.control}
+                  name="ui_options.hidden_in_forms"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                      <div className="space-y-0.5">
+                        <FormLabel>Hide in Forms</FormLabel>
+                        <FormDescription>
+                          Hide this field in content creation forms
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="ui_options.help_text"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Help Text</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Enter help text..." 
+                          className="resize-none" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Additional guidance text that appears below the field
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+            
+            {fieldType !== 'number' && (
+              <p className="text-gray-500">Advanced settings will be added soon</p>
+            )}
           </TabsContent>
         </Tabs>
         
