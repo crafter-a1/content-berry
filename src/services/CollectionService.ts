@@ -6,16 +6,19 @@ import { Json } from '@/integrations/supabase/types';
 export interface Collection {
   id: string;
   title: string;
-  apiId: string;
+  api_id: string;
   description: string;
   icon: string;
+  icon_color: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  settings?: any;
+  permissions?: any;
   iconColor: string;
-  status: 'published' | 'draft';
-  fields: number;
-  items?: number;
-  lastUpdated: string;
-  settings?: Json;
-  permissions?: string[];
+  fields?: number; // Changed from any[] to number to match the CollectionGrid.tsx interface
+  items?: number;  // Added to match the CollectionGrid.tsx interface
+  lastUpdated?: string;
 }
 
 export interface CollectionFormData {
@@ -29,7 +32,6 @@ export interface CollectionFormData {
 
 export async function fetchCollections(): Promise<Collection[]> {
   try {
-    // First, get the collections
     const { data: collectionsData, error: collectionsError } = await supabase
       .from('collections')
       .select('*')
@@ -39,7 +41,6 @@ export async function fetchCollections(): Promise<Collection[]> {
       throw collectionsError;
     }
 
-    // Count fields per collection
     const fieldCounts: Record<string, number> = {};
     for (const collection of collectionsData || []) {
       const { count, error } = await supabase
@@ -54,7 +55,6 @@ export async function fetchCollections(): Promise<Collection[]> {
       }
     }
 
-    // Count content items per collection
     const contentCounts: Record<string, number> = {};
     for (const collection of collectionsData || []) {
       const { count, error } = await supabase
@@ -69,22 +69,30 @@ export async function fetchCollections(): Promise<Collection[]> {
       }
     }
 
-    // Map the data to our Collection interface
-    return (collectionsData || []).map((collection) => ({
-      id: collection.id,
-      title: collection.title,
-      apiId: collection.api_id,
-      description: collection.description || '',
-      icon: collection.icon || 'C',
-      iconColor: collection.icon_color || 'blue',
-      status: collection.status as 'published' | 'draft',
-      fields: fieldCounts[collection.id] || 0,
-      items: contentCounts[collection.id] || 0,
-      lastUpdated: new Date(collection.updated_at).toLocaleDateString(),
-      // Handle settings and permissions that might not exist in the database
-      settings: collection.settings || {},
-      permissions: collection.permissions || []
-    }));
+    return (collectionsData || []).map((collection) => {
+      // Handle settings and permissions safely
+      const collectionWithOptionalProps = collection as any; // Type assertion to access optional properties
+      const settingsValue = collectionWithOptionalProps.settings ?? {};
+      const permissionsValue = collectionWithOptionalProps.permissions ?? [];
+      
+      return {
+        id: collection.id,
+        title: collection.title,
+        api_id: collection.api_id,
+        description: collection.description || '',
+        icon: collection.icon || 'C',
+        icon_color: collection.icon_color || 'blue',
+        iconColor: collection.icon_color || 'blue',
+        status: collection.status,
+        created_at: collection.created_at,
+        updated_at: collection.updated_at,
+        lastUpdated: collection.updated_at,
+        settings: settingsValue,
+        permissions: permissionsValue,
+        fields: fieldCounts[collection.id] || 0,  // Use the field count as a number
+        items: contentCounts[collection.id] || 0  // Use the content count as a number
+      };
+    });
   } catch (error) {
     console.error('Error fetching collections:', error);
     throw error;
@@ -104,7 +112,6 @@ export async function createCollection(params: CreateCollectionParams): Promise<
   try {
     const { name, apiId, description = '', status = 'published', settings = {}, permissions = [] } = params;
     
-    // Create the insert object
     const insertObj = { 
       title: name, 
       api_id: apiId, 
@@ -128,19 +135,27 @@ export async function createCollection(params: CreateCollectionParams): Promise<
       throw new Error('Failed to create collection - no data returned');
     }
 
+    // Handle settings and permissions safely
+    const collectionWithOptionalProps = newCollection as any; // Type assertion to access optional properties
+    const newCollectionSettings = collectionWithOptionalProps.settings ?? {};
+    const newCollectionPermissions = collectionWithOptionalProps.permissions ?? [];
+
     return {
       id: newCollection.id,
       title: newCollection.title,
-      apiId: newCollection.api_id,
+      api_id: newCollection.api_id,
       description: newCollection.description || '',
       icon: newCollection.icon || 'C',
+      icon_color: newCollection.icon_color || 'blue',
       iconColor: newCollection.icon_color || 'blue',
-      status: newCollection.status as 'published' | 'draft',
-      fields: 0,
-      items: 0,
-      lastUpdated: new Date(newCollection.updated_at).toLocaleDateString(),
-      settings: newCollection.settings || {},
-      permissions: newCollection.permissions || []
+      status: newCollection.status,
+      created_at: newCollection.created_at,
+      updated_at: newCollection.updated_at,
+      lastUpdated: newCollection.updated_at,
+      settings: newCollectionSettings,
+      permissions: newCollectionPermissions,
+      fields: 0, // New collection has no fields initially
+      items: 0   // New collection has no items initially
     };
   } catch (error: any) {
     console.error('Error creating collection:', error);
@@ -153,7 +168,6 @@ export async function createCollection(params: CreateCollectionParams): Promise<
   }
 }
 
-// ContentItem interface matches the structure shown in the provided image
 export interface ContentItem {
   id: string;
   collection_id: string;
@@ -188,7 +202,6 @@ export async function getContentItems(collectionId: string): Promise<ContentItem
   }
 }
 
-// Field interface matching the structure shown in the provided image
 export interface Field {
   id: string;
   name: string;
@@ -199,23 +212,69 @@ export interface Field {
   description?: string;
   placeholder?: string;
   default_value?: any;
-  validation?: any;
+  validation?: ValidationSettings;
   options?: any;
   is_hidden?: boolean;
   position?: number;
   required: boolean;
   ui_options?: any;
-  config?: any; // For backward compatibility
-  order?: number; // For backward compatibility
+  config?: any;
+  order?: number;
+  helpText?: string;
+  appearance?: AppearanceSettings;
+  advanced?: AdvancedSettings;
 }
 
-// Field settings interface to properly type the settings
+export interface ValidationSettings {
+  required?: boolean;
+  minLengthEnabled?: boolean;
+  maxLengthEnabled?: boolean;
+  patternEnabled?: boolean;
+  customValidationEnabled?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  customMessage?: string;
+  customValidation?: string;
+  ariaRequired?: boolean;
+  ariaDescribedBy?: string;
+  ariaLabel?: string;
+  ariaLabelledBy?: string;
+  ariaInvalid?: boolean;
+  autocomplete?: string;
+}
+
+export interface AppearanceSettings {
+  floatLabel?: boolean;
+  filled?: boolean;
+  width?: number;
+  display_mode?: string;
+  showCharCount?: boolean;
+  customClass?: string;
+  customCss?: string;
+}
+
+export interface AdvancedSettings {
+  showButtons?: boolean;
+  buttonLayout?: 'horizontal' | 'vertical';
+  prefix?: string;
+  suffix?: string;
+  currency?: string;
+  locale?: string;
+  mask?: string;
+  customData?: Record<string, any>;
+}
+
 export interface FieldSettings {
   default_value?: any;
-  validation?: any;
+  validation?: ValidationSettings;
   options?: any;
   is_hidden?: boolean;
   ui_options?: any;
+  helpText?: string;
+  keyFilter?: string;
+  appearance?: AppearanceSettings;
+  advanced?: AdvancedSettings;
   [key: string]: any;
 }
 
@@ -232,7 +291,6 @@ export async function getFieldsForCollection(collectionId: string): Promise<Fiel
     }
 
     return (data || []).map(field => {
-      // Safely access nested properties
       const settings = field.settings as FieldSettings || {};
       
       return {
@@ -242,18 +300,20 @@ export async function getFieldsForCollection(collectionId: string): Promise<Fiel
         type: field.type,
         collection_id: field.collection_id,
         description: field.description || '',
-        label: field.name, // Using name as fallback for label
-        placeholder: '',
+        helpText: settings.helpText || '',
+        label: field.name,
+        placeholder: settings.ui_options?.placeholder || '',
         default_value: settings.default_value || null,
         validation: settings.validation || null,
         options: settings.options || null,
         is_hidden: settings.is_hidden || false,
         position: field.sort_order || 0,
         required: field.required || false,
-        ui_options: settings.ui_options || null,
-        // For backward compatibility
+        ui_options: settings.ui_options || {},
         config: field.settings || {},
-        order: field.sort_order || 0
+        order: field.sort_order || 0,
+        appearance: settings.appearance || {},
+        advanced: settings.advanced || {}
       };
     });
   } catch (error) {
@@ -264,7 +324,8 @@ export async function getFieldsForCollection(collectionId: string): Promise<Fiel
 
 export async function createField(collectionId: string, fieldData: any): Promise<Field> {
   try {
-    // Check if collection exists
+    console.log('Creating field with data:', fieldData);
+    
     const { data: collection, error: collectionError } = await supabase
       .from('collections')
       .select('id')
@@ -275,14 +336,41 @@ export async function createField(collectionId: string, fieldData: any): Promise
       throw new Error(`Collection with ID ${collectionId} not found`);
     }
 
-    // We'll store most of the custom field props in the settings JSON column
+    // Generate API ID from name if not provided
+    const apiId = fieldData.api_id || 
+                 fieldData.name.toLowerCase()
+                   .replace(/\s+/g, '_')
+                   .replace(/[^a-z0-9_]/g, '');
+
+    // Create structured field settings
     const fieldSettings: FieldSettings = {
-      default_value: fieldData.default_value || null,
-      validation: fieldData.validation || null,
-      options: fieldData.options || null,
+      default_value: fieldData.defaultValue || null,
+      validation: fieldData.validation || {},
+      options: fieldData.options || {},
       is_hidden: fieldData.is_hidden || false,
-      ui_options: fieldData.ui_options || null
+      ui_options: {
+        placeholder: fieldData.ui_options?.placeholder || fieldData.placeholder || '',
+        help_text: fieldData.helpText || '',
+        display_mode: fieldData.ui_options?.display_mode || 'default',
+        showCharCount: fieldData.ui_options?.showCharCount || false,
+        width: fieldData.ui_options?.width || 100,
+        hidden_in_forms: fieldData.ui_options?.hidden_in_forms || false
+      },
+      helpText: fieldData.helpText || '',
+      keyFilter: fieldData.keyFilter || 'none',
+      appearance: fieldData.appearance || {},
+      advanced: fieldData.advanced || {}
     };
+
+    // Add field-specific properties to settings
+    if (fieldData.rows) fieldSettings.rows = fieldData.rows;
+    if (fieldData.min) fieldSettings.min = fieldData.min;
+    if (fieldData.max) fieldSettings.max = fieldData.max;
+    if (fieldData.length) fieldSettings.length = fieldData.length;
+    if (fieldData.maxTags) fieldSettings.maxTags = fieldData.maxTags;
+    if (fieldData.prefix) fieldSettings.prefix = fieldData.prefix;
+    if (fieldData.suffix) fieldSettings.suffix = fieldData.suffix;
+    if (fieldData.minHeight) fieldSettings.minHeight = fieldData.minHeight;
 
     const { data: field, error } = await supabase
       .from('fields')
@@ -290,7 +378,7 @@ export async function createField(collectionId: string, fieldData: any): Promise
         {
           collection_id: collectionId,
           name: fieldData.name,
-          api_id: fieldData.api_id || fieldData.name.toLowerCase().replace(/\s+/g, '_'),
+          api_id: apiId,
           type: fieldData.type,
           description: fieldData.description || '',
           required: fieldData.required || false,
@@ -309,6 +397,8 @@ export async function createField(collectionId: string, fieldData: any): Promise
       throw new Error('Failed to create field - no data returned');
     }
 
+    console.log('Field created successfully:', field);
+
     return {
       id: field.id,
       name: field.name,
@@ -316,8 +406,9 @@ export async function createField(collectionId: string, fieldData: any): Promise
       type: field.type,
       collection_id: field.collection_id,
       description: field.description || '',
-      label: field.name, // Using name as label
-      placeholder: '',
+      helpText: fieldSettings.helpText || '',
+      label: field.name,
+      placeholder: fieldSettings.ui_options.placeholder || '',
       default_value: fieldSettings.default_value,
       validation: fieldSettings.validation,
       options: fieldSettings.options,
@@ -326,10 +417,117 @@ export async function createField(collectionId: string, fieldData: any): Promise
       required: field.required || false,
       ui_options: fieldSettings.ui_options,
       config: field.settings || {},
-      order: field.sort_order || 0
+      order: field.sort_order || 0,
+      appearance: fieldSettings.appearance,
+      advanced: fieldSettings.advanced
     };
   } catch (error: any) {
     console.error('Error creating field:', error);
+    throw error;
+  }
+}
+
+export async function updateField(collectionId: string, fieldId: string, fieldData: any): Promise<Field> {
+  try {
+    console.log('Updating field with data:', fieldData);
+    
+    // Create structured field settings
+    const fieldSettings: FieldSettings = {
+      default_value: fieldData.defaultValue || null,
+      validation: fieldData.validation || {},
+      options: fieldData.options || {},
+      is_hidden: fieldData.is_hidden || false,
+      ui_options: {
+        placeholder: fieldData.ui_options?.placeholder || fieldData.placeholder || '',
+        help_text: fieldData.helpText || '',
+        display_mode: fieldData.ui_options?.display_mode || 'default',
+        showCharCount: fieldData.ui_options?.showCharCount || false,
+        width: fieldData.ui_options?.width || 100,
+        hidden_in_forms: fieldData.ui_options?.hidden_in_forms || false
+      },
+      helpText: fieldData.helpText || '',
+      keyFilter: fieldData.keyFilter || 'none',
+      appearance: fieldData.appearance || {},
+      advanced: fieldData.advanced || {}
+    };
+
+    // Add field-specific properties to settings
+    if (fieldData.rows) fieldSettings.rows = fieldData.rows;
+    if (fieldData.min) fieldSettings.min = fieldData.min;
+    if (fieldData.max) fieldSettings.max = fieldData.max;
+    if (fieldData.length) fieldSettings.length = fieldData.length;
+    if (fieldData.maxTags) fieldSettings.maxTags = fieldData.maxTags;
+    if (fieldData.prefix) fieldSettings.prefix = fieldData.prefix;
+    if (fieldData.suffix) fieldSettings.suffix = fieldData.suffix;
+    if (fieldData.minHeight) fieldSettings.minHeight = fieldData.minHeight;
+    
+    const { data: field, error } = await supabase
+      .from('fields')
+      .update({
+        name: fieldData.name,
+        description: fieldData.description || '',
+        required: fieldData.required || false,
+        settings: fieldSettings
+      })
+      .eq('id', fieldId)
+      .eq('collection_id', collectionId)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    if (!field) {
+      throw new Error('Failed to update field - no data returned');
+    }
+
+    console.log('Field updated successfully:', field);
+
+    return {
+      id: field.id,
+      name: field.name,
+      api_id: field.api_id,
+      type: field.type,
+      collection_id: field.collection_id,
+      description: field.description || '',
+      helpText: fieldSettings.helpText || '',
+      label: field.name,
+      placeholder: fieldSettings.ui_options.placeholder || '',
+      default_value: fieldSettings.default_value,
+      validation: fieldSettings.validation,
+      options: fieldSettings.options,
+      is_hidden: fieldSettings.is_hidden,
+      position: field.sort_order || 0,
+      required: field.required || false,
+      ui_options: fieldSettings.ui_options,
+      config: field.settings || {},
+      order: field.sort_order || 0,
+      appearance: fieldSettings.appearance,
+      advanced: fieldSettings.advanced
+    };
+  } catch (error: any) {
+    console.error('Error updating field:', error);
+    throw error;
+  }
+}
+
+export const deleteField = async (collectionId: string, fieldId: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('fields')
+      .delete()
+      .eq('id', fieldId)
+      .eq('collection_id', collectionId);
+    
+    if (error) {
+      throw error;
+    }
+    
+    console.log(`Field ${fieldId} deleted successfully`);
+    return Promise.resolve();
+  } catch (error) {
+    console.error(`Error deleting field ${fieldId}:`, error);
     throw error;
   }
 }

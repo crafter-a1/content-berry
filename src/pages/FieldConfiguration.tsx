@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, ArrowLeft, Save, Eye } from 'lucide-react';
+import { Plus, ArrowLeft, Save, Eye, Trash2, FileType, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FieldTypeSelector } from '@/components/fields/FieldTypeSelector';
 import { FieldConfigPanel } from '@/components/fields/FieldConfigPanel';
@@ -12,9 +12,14 @@ import { FieldValidationPanel } from '@/components/fields/FieldValidationPanel';
 import { FieldLayoutPanel } from '@/components/fields/FieldLayoutPanel';
 import { toast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getFieldsForCollection, createField } from '@/services/CollectionService';
+import { getFieldsForCollection, createField, updateField, deleteField, Field, ValidationSettings } from '@/services/CollectionService';
+import { ComponentSelector } from '@/components/components/ComponentSelector';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { CollectionPreviewForm } from '@/components/collection-preview/CollectionPreviewForm';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
+import JSONEditorField from '@/components/fields/inputs/JSONEditorField';
+import { FieldAdvancedPanel } from '@/components/fields/FieldAdvancedPanel';
 
-// Define the field types categorized by group
 const fieldTypes = {
   'Text & Numbers': [
     { id: 'text', name: 'Input', description: 'Single line text field' },
@@ -32,6 +37,7 @@ const fieldTypes = {
     { id: 'list', name: 'List', description: 'Ordered or unordered list' },
     { id: 'slug', name: 'Slug', description: 'URL-friendly version of a name' },
     { id: 'seo', name: 'SEO Interface', description: 'Search engine optimization fields' },
+    { id: 'translation', name: 'Translation', description: 'Multilingual content editor' },
   ],
   'Selection': [
     { id: 'select', name: 'Dropdown', description: 'Single selection dropdown' },
@@ -80,6 +86,7 @@ const fieldTypes = {
     { id: 'divider', name: 'Divider', description: 'Visual separator between fields' },
     { id: 'buttonLinks', name: 'Button Links', description: 'Clickable button links' },
     { id: 'notice', name: 'Notice', description: 'Information or warning message' },
+    { id: 'modal', name: 'Modal', description: 'Dialog popup trigger' },
     { id: 'builderButton', name: 'Builder (M2A) Button Group', description: 'Button group for builder interface' },
     { id: 'superHeader', name: 'Super Header', description: 'Prominent section header' },
   ],
@@ -92,7 +99,6 @@ const fieldTypes = {
   ],
 };
 
-// Flatten the categories for mutation handling
 const flatFieldTypes = Object.entries(fieldTypes).flatMap(([category, types]) => 
   types.map(type => ({ ...type, group: category }))
 );
@@ -106,37 +112,99 @@ export default function FieldConfiguration() {
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('fields');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [appearanceSettings, setAppearanceSettings] = useState<any>({});
+  const [advancedSettings, setAdvancedSettings] = useState<any>({});
+  const [validationSettings, setValidationSettings] = useState<ValidationSettings>({});
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [componentSelectorOpen, setComponentSelectorOpen] = useState(false);
+  const [jsonPreviewOpen, setJsonPreviewOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<Record<string, any>>({});
+  const [isSaving, setIsSaving] = useState(false);
   
-  // Redirect if no collectionId
   useEffect(() => {
     if (!collectionId) {
       navigate('/collections');
     }
   }, [collectionId, navigate]);
 
-  // Auto-select the first category if none is selected
   useEffect(() => {
     if (!activeCategory && Object.keys(fieldTypes).length > 0) {
       setActiveCategory(Object.keys(fieldTypes)[0]);
     }
   }, [activeCategory]);
   
-  // Fetch fields for the selected collection
   const { data: fields = [], isLoading, error } = useQuery({
     queryKey: ['fields', collectionId],
     queryFn: () => getFieldsForCollection(collectionId!),
     enabled: !!collectionId
   });
   
-  // Create field mutation
   const createFieldMutation = useMutation({
     mutationFn: (fieldData: any) => createField(collectionId!, fieldData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fields', collectionId] });
-      // Also invalidate collections to update fields count
       queryClient.invalidateQueries({ queryKey: ['collections'] });
       setSelectedFieldType(null);
       setSelectedFieldId(null);
+      setAdvancedSettings({});
+      setValidationSettings({});
+      
+      toast({
+        title: "Field created",
+        description: "Your field has been successfully created",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error creating field",
+        description: "There was an error creating your field. Please try again.",
+        variant: "destructive",
+      });
+      console.error("Error creating field:", error);
+    }
+  });
+
+  const updateFieldMutation = useMutation({
+    mutationFn: ({ fieldId, fieldData }: { fieldId: string, fieldData: any }) => 
+      updateField(collectionId!, fieldId, fieldData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fields', collectionId] });
+      queryClient.invalidateQueries({ queryKey: ['collections'] });
+      
+      toast({
+        title: "Field updated",
+        description: "Your field has been successfully updated",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error updating field",
+        description: "There was an error updating your field. Please try again.",
+        variant: "destructive",
+      });
+      console.error("Error updating field:", error);
+    }
+  });
+
+  const deleteFieldMutation = useMutation({
+    mutationFn: (fieldId: string) => deleteField(collectionId!, fieldId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fields', collectionId] });
+      queryClient.invalidateQueries({ queryKey: ['collections'] });
+      setSelectedFieldId(null);
+      
+      toast({
+        title: "Field deleted",
+        description: "Your field has been successfully deleted",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error deleting field",
+        description: "There was an error deleting your field. Please try again.",
+        variant: "destructive",
+      });
+      console.error("Error deleting field:", error);
     }
   });
 
@@ -146,29 +214,156 @@ export default function FieldConfiguration() {
   };
 
   const selectField = (fieldId: string) => {
+    const selectedField = fields.find(f => f.id === fieldId);
+    console.log('Selected field:', selectedField);
+    
     setSelectedFieldId(fieldId);
     setSelectedFieldType(null);
+    
+    if (selectedField && selectedField.validation) {
+      setValidationSettings(selectedField.validation);
+    } else {
+      setValidationSettings({});
+    }
+    
+    if (selectedField && selectedField.advanced) {
+      setAdvancedSettings(selectedField.advanced);
+    } else {
+      setAdvancedSettings({});
+    }
+  };
+  
+  const handleDeleteField = (fieldId: string) => {
+    deleteFieldMutation.mutate(fieldId);
   };
 
   const handleSaveField = async (fieldData: any) => {
-    if (selectedFieldId) {
-      // Update existing field - not implemented yet
-      toast({
-        title: "Field updated",
-        description: `The field "${fieldData.name}" has been updated.`,
-      });
-    } else {
-      // Add new field
-      createFieldMutation.mutate({
-        ...fieldData,
-        type: selectedFieldType
-      });
+    setIsSaving(true);
+    
+    try {
+      if (selectedFieldId) {
+        await updateFieldMutation.mutateAsync({ 
+          fieldId: selectedFieldId, 
+          fieldData: {
+            ...fieldData,
+            type: fields.find(f => f.id === selectedFieldId)?.type,
+            appearance: appearanceSettings,
+            validation: validationSettings,
+            advanced: advancedSettings
+          }
+        });
+      } else {
+        await createFieldMutation.mutateAsync({
+          ...fieldData,
+          type: selectedFieldType,
+          appearance: appearanceSettings,
+          validation: validationSettings,
+          advanced: advancedSettings
+        });
+      }
       
-      toast({
-        title: "Field created",
-        description: `The field "${fieldData.name}" has been created.`,
-      });
+      setSelectedFieldId(null);
+      setSelectedFieldType(null);
+    } catch (error) {
+      console.error('Error saving field:', error);
+    } finally {
+      setIsSaving(false);
     }
+  };
+
+  const handleUpdateAppearanceSettings = (settings: any) => {
+    console.log('Updating appearance settings:', settings);
+    setAppearanceSettings(settings);
+    
+    if (selectedFieldId) {
+      const selectedField = fields.find(f => f.id === selectedFieldId);
+      if (selectedField) {
+        updateFieldMutation.mutate({
+          fieldId: selectedFieldId,
+          fieldData: {
+            ...selectedField,
+            appearance: settings
+          }
+        });
+      }
+    }
+  };
+
+  const handleUpdateAdvancedSettings = (settings: any) => {
+    console.log('Updating advanced settings:', settings);
+    setAdvancedSettings(settings);
+    
+    if (selectedFieldId) {
+      const selectedField = fields.find(f => f.id === selectedFieldId);
+      if (selectedField) {
+        updateFieldMutation.mutate({
+          fieldId: selectedFieldId,
+          fieldData: {
+            ...selectedField,
+            advanced: settings
+          }
+        });
+      }
+    }
+  };
+  
+  const handleUpdateValidationSettings = (settings: ValidationSettings) => {
+    console.log('Updating validation settings in main component:', settings);
+    setValidationSettings(settings);
+    
+    if (selectedFieldId) {
+      const selectedField = fields.find(f => f.id === selectedFieldId);
+      if (selectedField) {
+        updateFieldMutation.mutate({
+          fieldId: selectedFieldId,
+          fieldData: {
+            ...selectedField,
+            validation: settings,
+            required: settings.required || false
+          }
+        });
+      }
+    }
+  };
+
+  const handlePreview = () => {
+    setPreviewDialogOpen(true);
+  };
+
+  const handlePreviewSave = (formData: Record<string, any>) => {
+    setPreviewData(formData);
+    setJsonPreviewOpen(true);
+    toast({
+      title: "Preview data saved",
+      description: "Your content has been captured for preview.",
+    });
+  };
+
+  const addComponentFields = (componentId: string, componentFields: any[]) => {
+    const fieldsToAdd = componentFields.map(field => ({
+      name: field.name,
+      type: field.type,
+      description: '',
+      placeholder: `Enter ${field.name}`,
+      required: field.required,
+      config: field.config || {},
+    }));
+    
+    fieldsToAdd.forEach(fieldData => {
+      createFieldMutation.mutate(fieldData);
+    });
+    
+    toast({
+      title: "Component added",
+      description: `Added ${fieldsToAdd.length} fields from the component to your collection.`,
+    });
+  };
+
+  const handleSaveAllChanges = () => {
+    toast({
+      title: "Changes saved",
+      description: "All your field configuration changes have been saved.",
+    });
   };
 
   const renderTabContent = () => {
@@ -176,24 +371,33 @@ export default function FieldConfiguration() {
       case 'fields':
         return (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Fields List Panel */}
             <Card className="col-span-1">
               <CardHeader>
                 <CardTitle className="text-lg flex justify-between items-center">
                   Fields
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    onClick={() => {
-                      setSelectedFieldId(null);
-                      setSelectedFieldType(null);
-                      setActiveTab('fields');
-                    }}
-                    className="h-8 gap-1"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add Field
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => setComponentSelectorOpen(true)}
+                      className="h-8 gap-1"
+                    >
+                      <FileType className="h-4 w-4" />
+                      Add Component
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => {
+                        setSelectedFieldId(null);
+                        setSelectedFieldType(null);
+                      }}
+                      className="h-8 gap-1"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Field
+                    </Button>
+                  </div>
                 </CardTitle>
                 <CardDescription>
                   All fields defined for this collection
@@ -207,14 +411,14 @@ export default function FieldConfiguration() {
                 ) : (
                   <FieldList 
                     fields={fields} 
-                    onSelectField={selectField} 
+                    onSelectField={selectField}
+                    onDeleteField={handleDeleteField}
                     selectedFieldId={selectedFieldId}
                   />
                 )}
               </CardContent>
             </Card>
             
-            {/* Field Type Selector or Configuration Panel */}
             <Card className="col-span-1 lg:col-span-2">
               {!selectedFieldType && !selectedFieldId ? (
                 <>
@@ -249,16 +453,33 @@ export default function FieldConfiguration() {
                 </>
               ) : (
                 <>
-                  <CardHeader>
-                    <CardTitle className="text-lg">
-                      {selectedFieldId ? 'Edit Field' : 'New Field'}
-                    </CardTitle>
-                    <CardDescription>
-                      {selectedFieldId 
-                        ? 'Modify the field properties' 
-                        : `Configure your new ${flatFieldTypes.find(t => t.id === selectedFieldType)?.name} field`
-                      }
-                    </CardDescription>
+                  <CardHeader className="flex flex-row items-start justify-between">
+                    <div>
+                      <CardTitle className="text-lg">
+                        {selectedFieldId ? 'Edit Field' : 'New Field'}
+                      </CardTitle>
+                      <CardDescription>
+                        {selectedFieldId 
+                          ? 'Modify the field properties' 
+                          : `Configure your new ${flatFieldTypes.find(t => t.id === selectedFieldType)?.name} field`
+                        }
+                      </CardDescription>
+                    </div>
+                    {selectedFieldId && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => {
+                          if (window.confirm("Are you sure you want to delete this field?")) {
+                            handleDeleteField(selectedFieldId);
+                          }
+                        }}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Field
+                      </Button>
+                    )}
                   </CardHeader>
                   <CardContent>
                     <FieldConfigPanel
@@ -269,6 +490,7 @@ export default function FieldConfiguration() {
                         setSelectedFieldId(null);
                         setSelectedFieldType(null);
                       }}
+                      onUpdateAdvanced={handleUpdateAdvancedSettings}
                     />
                   </CardContent>
                 </>
@@ -280,7 +502,74 @@ export default function FieldConfiguration() {
         return (
           <Card>
             <CardContent className="pt-6">
-              <FieldValidationPanel />
+              {selectedFieldId ? (
+                <FieldValidationPanel 
+                  fieldType={fields.find(f => f.id === selectedFieldId)?.type || null} 
+                  initialData={fields.find(f => f.id === selectedFieldId)?.validation || {}}
+                  onUpdate={handleUpdateValidationSettings}
+                />
+              ) : (
+                <div className="text-center py-10">
+                  <h3 className="text-xl font-semibold mb-2">No Field Selected</h3>
+                  <p className="text-gray-500 mb-6">Please select a field from the list to configure its validation rules</p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setActiveTab('fields')}
+                  >
+                    Back to Fields
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      case 'appearance':
+        return (
+          <Card>
+            <CardContent className="pt-6">
+              {selectedFieldId ? (
+                <FieldAppearancePanel 
+                  fieldType={fields.find(f => f.id === selectedFieldId)?.type || null} 
+                  initialData={fields.find(f => f.id === selectedFieldId)?.appearance || {}}
+                  onSave={handleUpdateAppearanceSettings}
+                />
+              ) : (
+                <div className="text-center py-10">
+                  <h3 className="text-xl font-semibold mb-2">No Field Selected</h3>
+                  <p className="text-gray-500 mb-6">Please select a field from the list to configure its appearance</p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setActiveTab('fields')}
+                  >
+                    Back to Fields
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      case 'advanced':
+        return (
+          <Card>
+            <CardContent className="pt-6">
+              {selectedFieldId ? (
+                <FieldAdvancedPanel 
+                  fieldType={fields.find(f => f.id === selectedFieldId)?.type || null} 
+                  initialData={fields.find(f => f.id === selectedFieldId)?.advanced || {}}
+                  onSave={handleUpdateAdvancedSettings}
+                />
+              ) : (
+                <div className="text-center py-10">
+                  <h3 className="text-xl font-semibold mb-2">No Field Selected</h3>
+                  <p className="text-gray-500 mb-6">Please select a field from the list to configure its advanced settings</p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setActiveTab('fields')}
+                  >
+                    Back to Fields
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         );
@@ -307,35 +596,141 @@ export default function FieldConfiguration() {
             </Button>
             <div>
               <h1 className="text-2xl font-bold mb-1">Field Configuration</h1>
-              <p className="text-gray-500">
-                {collectionId ? `Configuring fields for "${collectionId}" collection` : 'Configure fields for your collection'}
+              <p className="text-sm text-gray-500">
+                Configuring fields for "{collectionId}" collection
               </p>
             </div>
           </div>
           
           <div className="flex gap-3 mt-4 md:mt-0">
-            <Button variant="outline" className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2"
+              onClick={handlePreview}
+            >
               <Eye className="h-4 w-4" />
               Preview
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={() => {
+                if (selectedFieldId) {
+                  const selectedField = fields.find(f => f.id === selectedFieldId);
+                  if (selectedField) {
+                    updateFieldMutation.mutate({
+                      fieldId: selectedFieldId,
+                      fieldData: {
+                        ...selectedField,
+                        appearance: appearanceSettings,
+                        validation: validationSettings,
+                        advanced: advancedSettings
+                      }
+                    });
+                  }
+                }
+              }}
+            >
               <Save className="mr-2 h-4 w-4" />
               Save Changes
             </Button>
           </div>
         </div>
         
-        <Tabs defaultValue="fields" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full max-w-md grid grid-cols-3 mb-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
             <TabsTrigger value="fields">Fields</TabsTrigger>
             <TabsTrigger value="validation">Validation</TabsTrigger>
-            <TabsTrigger value="layout">Layout</TabsTrigger>
+            <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
           
-          <TabsContent value={activeTab}>
+          <TabsContent value="fields">
             {renderTabContent()}
           </TabsContent>
         </Tabs>
+
+        <Dialog open={componentSelectorOpen} onOpenChange={setComponentSelectorOpen}>
+          <DialogContent className="sm:max-w-[700px]">
+            <DialogHeader>
+              <DialogTitle>Add Component</DialogTitle>
+              <DialogDescription>
+                Select a component to add its fields to your collection
+              </DialogDescription>
+            </DialogHeader>
+            
+            <ComponentSelector 
+              onSelectComponent={(component) => {
+                addComponentFields(component.id, component.fields);
+                setComponentSelectorOpen(false);
+              }}
+              onCancel={() => setComponentSelectorOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+          <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <div className="flex justify-between items-center">
+                <DialogTitle className="text-2xl font-bold">Collection Preview</DialogTitle>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setPreviewDialogOpen(false)}
+                  className="h-8 w-8"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <DialogDescription>
+                Fill in the fields to preview how the content will look
+              </DialogDescription>
+            </DialogHeader>
+            
+            <CollectionPreviewForm 
+              collectionId={collectionId || ''} 
+              fields={fields} 
+              isLoading={isLoading} 
+              error={error}
+              onPreviewSave={handlePreviewSave}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <AlertDialog open={jsonPreviewOpen} onOpenChange={setJsonPreviewOpen}>
+          <AlertDialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Preview Data JSON</AlertDialogTitle>
+              <AlertDialogDescription>
+                This is how your data will be structured in the database
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <div className="py-4">
+              <JSONEditorField
+                id="jsonPreview"
+                value={previewData}
+                onChange={() => {}}
+                rows={15}
+                helpText="This is a read-only preview of your data structure"
+              />
+            </div>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setJsonPreviewOpen(false)}>Close</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={() => {
+                  navigator.clipboard.writeText(JSON.stringify(previewData, null, 2));
+                  toast({
+                    title: "Copied to clipboard",
+                    description: "JSON data has been copied to your clipboard",
+                  });
+                }}
+              >
+                Copy JSON
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </MainLayout>
   );
