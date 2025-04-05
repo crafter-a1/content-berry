@@ -264,6 +264,10 @@ export function FieldConfigPanel({
     const fieldName = form.watch('name') || "Field Label";
     const placeholder = form.watch('ui_options.placeholder') || "Enter value...";
     const helpText = form.watch('helpText');
+    
+    // Dummy values for preview
+    const dummyValue = fieldType === 'number' ? 0 : '';
+    const dummyOnChange = () => {};
 
     switch (fieldType) {
       case 'text':
@@ -273,6 +277,8 @@ export function FieldConfigPanel({
             <InputTextField
               id="preview-field"
               label={fieldName}
+              value={dummyValue}
+              onChange={dummyOnChange}
               placeholder={placeholder}
               helpText={helpText}
               keyFilter={form.watch('keyFilter') || "none"}
@@ -281,14 +287,15 @@ export function FieldConfigPanel({
             />
           </div>
         );
+      
       case 'number':
         return (
           <div className="mt-4 p-4 border rounded-md">
             <h3 className="text-sm font-medium mb-2">Field Preview:</h3>
             <NumberInputField
               id="preview-number"
-              value={0}
-              onChange={() => {}}
+              value={dummyValue}
+              onChange={dummyOnChange}
               label={fieldName}
               min={form.watch('min')}
               max={form.watch('max')}
@@ -302,6 +309,7 @@ export function FieldConfigPanel({
             />
           </div>
         );
+      
       case 'password':
         return (
           <div className="mt-4 p-4 border rounded-md">
@@ -318,6 +326,7 @@ export function FieldConfigPanel({
             />
           </div>
         );
+      
       case 'mask':
         return (
           <div className="mt-4 p-4 border rounded-md">
@@ -335,6 +344,7 @@ export function FieldConfigPanel({
             />
           </div>
         );
+      
       case 'otp':
         return (
           <div className="mt-4 p-4 border rounded-md">
@@ -349,6 +359,7 @@ export function FieldConfigPanel({
             />
           </div>
         );
+      
       case 'autocomplete':
         return (
           <div className="mt-4 p-4 border rounded-md">
@@ -370,6 +381,7 @@ export function FieldConfigPanel({
             />
           </div>
         );
+      
       case 'blockeditor':
         return (
           <div className="mt-4 p-4 border rounded-md">
@@ -385,6 +397,7 @@ export function FieldConfigPanel({
             />
           </div>
         );
+      
       case 'wysiwyg':
         return (
           <div className="mt-4 p-4 border rounded-md">
@@ -400,6 +413,7 @@ export function FieldConfigPanel({
             />
           </div>
         );
+      
       case 'markdown':
         return (
           <div className="mt-4 p-4 border rounded-md">
@@ -415,6 +429,7 @@ export function FieldConfigPanel({
             />
           </div>
         );
+      
       case 'tags':
         return (
           <div className="mt-4 p-4 border rounded-md">
@@ -430,6 +445,7 @@ export function FieldConfigPanel({
             />
           </div>
         );
+      
       case 'slug':
         return (
           <div className="mt-4 p-4 border rounded-md">
@@ -446,6 +462,7 @@ export function FieldConfigPanel({
             />
           </div>
         );
+      
       case 'textarea':
         return (
           <div className="mt-4 p-4 border rounded-md">
@@ -463,6 +480,7 @@ export function FieldConfigPanel({
             </div>
           </div>
         );
+      
       default:
         return null;
     }

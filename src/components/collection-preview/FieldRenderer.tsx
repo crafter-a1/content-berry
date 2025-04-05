@@ -1,35 +1,26 @@
+
 import React from "react";
 import InputTextField from "../fields/inputs/InputTextField";
 import PasswordInputField from "../fields/inputs/PasswordInputField";
 import NumberInputField from "../fields/inputs/NumberInputField";
-import TextareaField from "../fields/inputs/TextareaField";
+import { Textarea } from "@/components/ui/textarea";
 import MarkdownEditorField from "../fields/inputs/MarkdownEditorField";
 import WysiwygEditorField from "../fields/inputs/WysiwygEditorField";
 import BlockEditorField from "../fields/inputs/BlockEditorField";
-import FileUploadField from "../fields/inputs/FileUploadField";
-import ImageUploadField from "../fields/inputs/ImageUploadField";
-import DatePickerField from "../fields/inputs/DatePickerField";
-import SelectField from "../fields/inputs/SelectField";
-import MultiSelectField from "../fields/inputs/MultiSelectField";
-import ToggleField from "../fields/inputs/ToggleField";
-import CheckboxGroupField from "../fields/inputs/CheckboxGroupField";
-import RadioGroupField from "../fields/inputs/RadioGroupField";
-import ColorPickerField from "../fields/inputs/ColorPickerField";
-import SlugInputField from "../fields/inputs/SlugInputField";
-import TagsInputField from "../fields/inputs/TagsInputField";
-import MaskInputField from "../fields/inputs/MaskInputField";
-import OTPInputField from "../fields/inputs/OTPInputField";
-import AutocompleteInputField from "../fields/inputs/AutocompleteInputField";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-interface FieldRendererProps {
+// Define appropriate interfaces for the field renderer
+export interface FieldRendererProps {
   field: any;
   value: any;
-  onChange: (fieldId: string, value: any) => void;
+  titleField?: string | null;
+  onInputChange: (fieldId: string, value: any) => void;
   errors?: Record<string, string[]>;
 }
 
-export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererProps) => {
+export const FieldRenderer = ({ field, value, titleField, onInputChange, errors }: FieldRendererProps) => {
   const fieldId = field.id || field.apiId || field.name;
   const fieldName = field.name || "Field";
   const placeholder = field.ui_options?.placeholder || `Enter ${fieldName}...`;
@@ -52,7 +43,6 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
     fieldSize,
     labelSize,
     uiVariant,
-    customClass,
     colors = {}
   } = appearance;
   
@@ -61,7 +51,6 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
   
   // Create a className that includes any error styling
   const fieldClassName = cn(
-    customClass || "",
     "w-full",
     hasError && "has-error"
   );
@@ -73,7 +62,7 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
           id={fieldId}
           label={fieldName}
           value={value || ""}
-          onChange={(newValue) => onChange(fieldId, newValue)}
+          onChange={(newValue) => onInputChange(fieldId, newValue)}
           placeholder={placeholder}
           required={required}
           helpText={hasError ? errorMessage : helpText}
@@ -87,7 +76,6 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
           roundedCorners={roundedCorners || "medium"}
           fieldSize={fieldSize || "medium"}
           labelSize={labelSize || "medium"}
-          customClass={fieldClassName}
           colors={colors}
         />
       );
@@ -98,7 +86,7 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
           id={fieldId}
           label={fieldName}
           value={value || 0}
-          onChange={(newValue) => onChange(fieldId, newValue)}
+          onChange={(newValue) => onInputChange(fieldId, newValue)}
           min={field.min}
           max={field.max}
           placeholder={placeholder}
@@ -117,7 +105,6 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
           roundedCorners={roundedCorners || "medium"}
           fieldSize={fieldSize || "medium"}
           labelSize={labelSize || "medium"}
-          customClass={fieldClassName}
           colors={colors}
         />
       );
@@ -128,11 +115,10 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
           id={fieldId}
           label={fieldName}
           value={value || ""}
-          onChange={(newValue) => onChange(fieldId, newValue)}
+          onChange={(newValue) => onInputChange(fieldId, newValue)}
           placeholder={placeholder}
           required={required}
           helpText={hasError ? errorMessage : helpText}
-          showToggle={advanced.showToggle || true}
           floatLabel={floatLabel || false}
           filled={filled || false}
           textAlign={textAlign || "left"}
@@ -142,34 +128,26 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
           roundedCorners={roundedCorners || "medium"}
           fieldSize={fieldSize || "medium"}
           labelSize={labelSize || "medium"}
-          customClass={fieldClassName}
           colors={colors}
         />
       );
 
     case "textarea":
       return (
-        <TextareaField
-          id={fieldId}
-          label={fieldName}
-          value={value || ""}
-          onChange={(newValue) => onChange(fieldId, newValue)}
-          placeholder={placeholder}
-          required={required}
-          helpText={hasError ? errorMessage : helpText}
-          rows={field.rows || 3}
-          floatLabel={floatLabel || false}
-          filled={filled || false}
-          textAlign={textAlign || "left"}
-          labelPosition={labelPosition || "top"}
-          labelWidth={labelWidth || 30}
-          showBorder={showBorder !== false}
-          roundedCorners={roundedCorners || "medium"}
-          fieldSize={fieldSize || "medium"}
-          labelSize={labelSize || "medium"}
-          customClass={fieldClassName}
-          colors={colors}
-        />
+        <div className="space-y-2">
+          {fieldName && (
+            <Label htmlFor={fieldId}>{fieldName}{required && <span className="text-red-500 ml-1">*</span>}</Label>
+          )}
+          <Textarea
+            id={fieldId}
+            value={value || ""}
+            onChange={(e) => onInputChange(fieldId, e.target.value)}
+            placeholder={placeholder}
+            required={required}
+            rows={field.rows || 5}
+          />
+          {helpText && <p className="text-sm text-gray-500">{helpText}</p>}
+        </div>
       );
 
     case "markdown":
@@ -178,12 +156,11 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
           id={fieldId}
           label={fieldName}
           value={value || ""}
-          onChange={(newValue) => onChange(fieldId, newValue)}
+          onChange={(newValue) => onInputChange(fieldId, newValue)}
           placeholder={placeholder}
           required={required}
           helpText={hasError ? errorMessage : helpText}
           rows={field.rows || 3}
-          customClass={fieldClassName}
         />
       );
 
@@ -193,12 +170,11 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
           id={fieldId}
           label={fieldName}
           value={value || ""}
-          onChange={(newValue) => onChange(fieldId, newValue)}
+          onChange={(newValue) => onInputChange(fieldId, newValue)}
           placeholder={placeholder}
           required={required}
           helpText={hasError ? errorMessage : helpText}
           minHeight={field.minHeight || "200px"}
-          customClass={fieldClassName}
         />
       );
 
@@ -208,209 +184,65 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
           id={fieldId}
           label={fieldName}
           value={value || ""}
-          onChange={(newValue) => onChange(fieldId, newValue)}
+          onChange={(newValue) => onInputChange(fieldId, newValue)}
           placeholder={placeholder}
           required={required}
           helpText={hasError ? errorMessage : helpText}
           minHeight={field.minHeight || "200px"}
-          customClass={fieldClassName}
         />
       );
 
     case "file":
-      return (
-        <FileUploadField
-          id={fieldId}
-          label={fieldName}
-          value={value || ""}
-          onChange={(newValue) => onChange(fieldId, newValue)}
-          placeholder={placeholder}
-          required={required}
-          helpText={hasError ? errorMessage : helpText}
-          customClass={fieldClassName}
-        />
-      );
-
     case "image":
       return (
-        <ImageUploadField
-          id={fieldId}
-          label={fieldName}
-          value={value || ""}
-          onChange={(newValue) => onChange(fieldId, newValue)}
-          placeholder={placeholder}
-          required={required}
-          helpText={hasError ? errorMessage : helpText}
-          customClass={fieldClassName}
-        />
+        <div className="space-y-2">
+          {fieldName && (
+            <Label htmlFor={fieldId}>{fieldName}{required && <span className="text-red-500 ml-1">*</span>}</Label>
+          )}
+          <Button 
+            type="button" 
+            variant="outline" 
+            className="w-full h-32 flex flex-col items-center justify-center border-dashed"
+            onClick={() => alert("File upload not implemented in preview")}
+          >
+            <span className="text-sm text-gray-500">Click to upload {field.type}</span>
+          </Button>
+          {helpText && <p className="text-sm text-gray-500">{helpText}</p>}
+        </div>
       );
 
     case "date":
       return (
-        <DatePickerField
+        <InputTextField
           id={fieldId}
           label={fieldName}
           value={value || ""}
-          onChange={(newValue) => onChange(fieldId, newValue)}
-          placeholder={placeholder}
+          onChange={(newValue) => onInputChange(fieldId, newValue)}
+          placeholder={placeholder || "YYYY-MM-DD"}
           required={required}
           helpText={hasError ? errorMessage : helpText}
-          customClass={fieldClassName}
         />
       );
 
     case "select":
-      return (
-        <SelectField
-          id={fieldId}
-          label={fieldName}
-          value={value || ""}
-          onChange={(newValue) => onChange(fieldId, newValue)}
-          placeholder={placeholder}
-          required={required}
-          helpText={hasError ? errorMessage : helpText}
-          options={field.options || []}
-          customClass={fieldClassName}
-        />
-      );
-
     case "multiselect":
-      return (
-        <MultiSelectField
-          id={fieldId}
-          label={fieldName}
-          value={value || []}
-          onChange={(newValue) => onChange(fieldId, newValue)}
-          placeholder={placeholder}
-          required={required}
-          helpText={hasError ? errorMessage : helpText}
-          options={field.options || []}
-          customClass={fieldClassName}
-        />
-      );
-
     case "toggle":
-      return (
-        <ToggleField
-          id={fieldId}
-          label={fieldName}
-          value={value || false}
-          onChange={(newValue) => onChange(fieldId, newValue)}
-          helpText={hasError ? errorMessage : helpText}
-          customClass={fieldClassName}
-        />
-      );
-
     case "checkbox":
-      return (
-        <CheckboxGroupField
-          id={fieldId}
-          label={fieldName}
-          value={value || []}
-          onChange={(newValue) => onChange(fieldId, newValue)}
-          options={field.options || []}
-          helpText={hasError ? errorMessage : helpText}
-          customClass={fieldClassName}
-        />
-      );
-
     case "radio":
-      return (
-        <RadioGroupField
-          id={fieldId}
-          label={fieldName}
-          value={value || ""}
-          onChange={(newValue) => onChange(fieldId, newValue)}
-          options={field.options || []}
-          helpText={hasError ? errorMessage : helpText}
-          customClass={fieldClassName}
-        />
-      );
-
     case "color":
-      return (
-        <ColorPickerField
-          id={fieldId}
-          label={fieldName}
-          value={value || ""}
-          onChange={(newValue) => onChange(fieldId, newValue)}
-          helpText={hasError ? errorMessage : helpText}
-          customClass={fieldClassName}
-        />
-      );
-
     case "slug":
-      return (
-        <SlugInputField
-          id={fieldId}
-          label={fieldName}
-          value={value || ""}
-          onChange={(newValue) => onChange(fieldId, newValue)}
-          placeholder={placeholder}
-          required={required}
-          helpText={hasError ? errorMessage : helpText}
-          prefix={field.prefix || ""}
-          suffix={field.suffix || ""}
-          customClass={fieldClassName}
-        />
-      );
-
     case "tags":
-      return (
-        <TagsInputField
-          id={fieldId}
-          label={fieldName}
-          value={value || []}
-          onChange={(newValue) => onChange(fieldId, newValue)}
-          placeholder={placeholder}
-          required={required}
-          helpText={hasError ? errorMessage : helpText}
-          maxTags={field.maxTags || 10}
-          customClass={fieldClassName}
-        />
-      );
-
     case "mask":
-      return (
-        <MaskInputField
-          id={fieldId}
-          label={fieldName}
-          value={value || ""}
-          onChange={(newValue) => onChange(fieldId, newValue)}
-          placeholder={placeholder}
-          required={required}
-          helpText={hasError ? errorMessage : helpText}
-          mask={field.mask || ""}
-          customClass={fieldClassName}
-        />
-      );
-
     case "otp":
-      return (
-        <OTPInputField
-          id={fieldId}
-          label={fieldName}
-          value={value || ""}
-          onChange={(newValue) => onChange(fieldId, newValue)}
-          length={field.length || 6}
-          helpText={hasError ? errorMessage : helpText}
-          customClass={fieldClassName}
-        />
-      );
-
     case "autocomplete":
       return (
-        <AutocompleteInputField
-          id={fieldId}
-          label={fieldName}
-          value={value || ""}
-          onChange={(newValue) => onChange(fieldId, newValue)}
-          placeholder={placeholder}
-          required={required}
-          helpText={hasError ? errorMessage : helpText}
-          options={field.options || []}
-          customClass={fieldClassName}
-        />
+        <div className="space-y-2">
+          <Label htmlFor={fieldId}>{fieldName}</Label>
+          <div className="p-4 border border-dashed rounded-md text-center bg-gray-50">
+            <p className="text-sm text-gray-500">Field type '{field.type}' not available in preview</p>
+          </div>
+          {helpText && <p className="text-sm text-gray-500">{helpText}</p>}
+        </div>
       );
 
     default:

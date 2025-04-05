@@ -1,172 +1,142 @@
 
 import React, { useState } from "react";
 import { InputTextField } from "../inputs/InputTextField";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 
 export function InputTextFieldDemo() {
   const [basicValue, setBasicValue] = useState("");
-  const [filteredValue, setFilteredValue] = useState("");
-  const [floatValue, setFloatValue] = useState("");
-  const [filledValue, setFilledValue] = useState("Pre-filled content");
-  const [invalidValue, setInvalidValue] = useState("Invalid input");
+  const [requiredValue, setRequiredValue] = useState("");
+  const [helpTextValue, setHelpTextValue] = useState("");
+  const [lettersValue, setLettersValue] = useState("");
+  const [numbersValue, setNumbersValue] = useState("");
+  const [invalidValue, setInvalidValue] = useState("invalid@example");
+  const [disabledValue, setDisabledValue] = useState("Disabled input");
+  
+  // Fixed handler functions to match expected types
+  const handleBasicChange = (value: string) => {
+    setBasicValue(value);
+  };
+  
+  const handleRequiredChange = (value: string) => {
+    setRequiredValue(value);
+  };
+  
+  const handleHelpTextChange = (value: string) => {
+    setHelpTextValue(value);
+  };
+  
+  const handleLettersChange = (value: string) => {
+    setLettersValue(value);
+  };
+  
+  const handleNumbersChange = (value: string) => {
+    setNumbersValue(value);
+  };
+  
+  const handleInvalidChange = (value: string) => {
+    setInvalidValue(value);
+  };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Input Text Field Examples</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="basic">Basic</TabsTrigger>
-            <TabsTrigger value="features">Features</TabsTrigger>
-            <TabsTrigger value="states">States</TabsTrigger>
-            <TabsTrigger value="size">Sizes</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="basic">
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-sm font-medium mb-2">Standard Input</h3>
-                <InputTextField
-                  id="basic-input"
-                  label="Name"
-                  placeholder="Enter your name"
-                  value={basicValue}
-                  onChange={(e) => setBasicValue(e.target.value)}
-                  helpText="Please enter your full name"
-                />
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="features">
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-medium mb-2">Key Filter (Numbers Only)</h3>
-                <InputTextField
-                  id="filtered-input"
-                  label="Phone Number"
-                  placeholder="Enter numbers only"
-                  value={filteredValue}
-                  onChange={(e) => setFilteredValue(e.target.value)}
-                  keyFilter="numeric"
-                  helpText="Only numeric characters are allowed"
-                />
-              </div>
-              
-              <div>
-                <h3 className="text-sm font-medium mb-2">Float Label</h3>
-                <InputTextField
-                  id="float-input"
-                  label="Email Address"
-                  placeholder="Enter your email"
-                  value={floatValue}
-                  onChange={(e) => setFloatValue(e.target.value)}
-                  floatLabel
-                  helpText="Label floats when the field is focused or has content"
-                />
-              </div>
-              
-              <div>
-                <h3 className="text-sm font-medium mb-2">With Help Text</h3>
-                <InputTextField
-                  id="help-text-input"
-                  label="Username"
-                  placeholder="Choose a username"
-                  helpText="Username must be 3-20 characters long and contain only letters, numbers, and underscores"
-                />
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="states">
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-medium mb-2">Filled Input</h3>
-                <InputTextField
-                  id="filled-input"
-                  label="Bio"
-                  value={filledValue}
-                  onChange={(e) => setFilledValue(e.target.value)}
-                  filled
-                  helpText="This input comes pre-filled with content"
-                />
-              </div>
-              
-              <div>
-                <h3 className="text-sm font-medium mb-2">Invalid Input</h3>
-                <InputTextField
-                  id="invalid-input"
-                  label="Password"
-                  type="password"
-                  value={invalidValue}
-                  onChange={(e) => setInvalidValue(e.target.value)}
-                  invalid
-                  errorMessage="Password must be at least 8 characters long"
-                />
-              </div>
-              
-              <div>
-                <h3 className="text-sm font-medium mb-2">Disabled Input</h3>
-                <InputTextField
-                  id="disabled-input"
-                  label="Read-only Field"
-                  value="This field cannot be edited"
-                  disabled
-                  helpText="This input is disabled and cannot be modified"
-                />
-              </div>
-
-              <div>
-                <h3 className="text-sm font-medium mb-2">Required Input</h3>
-                <InputTextField
-                  id="required-input"
-                  label="Required Field"
-                  placeholder="This field is required"
-                  required
-                />
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="size">
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-medium mb-2">Small Input</h3>
-                <InputTextField
-                  id="small-input"
-                  label="Small Input"
-                  placeholder="Small size input"
-                  size="small"
-                />
-              </div>
-              
-              <div>
-                <h3 className="text-sm font-medium mb-2">Medium Input (Default)</h3>
-                <InputTextField
-                  id="medium-input"
-                  label="Medium Input"
-                  placeholder="Medium size input"
-                  size="medium"
-                />
-              </div>
-              
-              <div>
-                <h3 className="text-sm font-medium mb-2">Large Input</h3>
-                <InputTextField
-                  id="large-input"
-                  label="Large Input"
-                  placeholder="Large size input"
-                  size="large"
-                />
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+    <div className="grid gap-8">
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-medium mb-4">Basic Text Input</h3>
+          <InputTextField
+            id="basic-input"
+            label="Basic Input"
+            value={basicValue}
+            onChange={handleBasicChange}
+            placeholder="Enter text here"
+          />
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-medium mb-4">Required Field</h3>
+          <InputTextField
+            id="required-input"
+            label="Required Input"
+            value={requiredValue}
+            onChange={handleRequiredChange}
+            placeholder="This field is required"
+            required={true}
+          />
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-medium mb-4">With Help Text</h3>
+          <InputTextField
+            id="help-text-input"
+            label="Username"
+            value={helpTextValue}
+            onChange={handleHelpTextChange}
+            placeholder="Enter your username"
+            helpText="Your username must be unique"
+          />
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-medium mb-4">Letters Only</h3>
+          <InputTextField
+            id="letters-input"
+            label="Name"
+            value={lettersValue}
+            onChange={handleLettersChange}
+            placeholder="Enter your name"
+            keyFilter="letters"
+          />
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-medium mb-4">Numbers Only</h3>
+          <InputTextField
+            id="numbers-input"
+            label="Age"
+            value={numbersValue}
+            onChange={handleNumbersChange}
+            placeholder="Enter your age"
+            keyFilter="numbers"
+          />
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-medium mb-4">Invalid State</h3>
+          <InputTextField
+            id="invalid-input"
+            label="Email"
+            value={invalidValue}
+            onChange={handleInvalidChange}
+            helpText="Please enter a valid email address"
+          />
+          <div className="text-red-500 text-sm mt-1">Invalid email format</div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-medium mb-4">Disabled Input</h3>
+          <InputTextField
+            id="disabled-input"
+            label="Read Only"
+            value={disabledValue}
+            onChange={() => {}}
+            helpText="This field cannot be modified"
+          />
+        </CardContent>
+      </Card>
+      
+      {/* Remove or fix size property which doesn't exist on InputTextField */}
+    </div>
   );
 }
 

@@ -139,7 +139,7 @@ export function CollectionPreviewForm({
                 <FieldRenderer
                   key={field.id}
                   field={field}
-                  formData={formData}
+                  value={formData[field.id]}
                   titleField={titleField}
                   onInputChange={handleInputChange}
                 />
