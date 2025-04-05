@@ -294,7 +294,7 @@ export function FieldConfigPanel({
             <h3 className="text-sm font-medium mb-2">Field Preview:</h3>
             <NumberInputField
               id="preview-number"
-              value={dummyValue}
+              value={dummyValue as number}
               onChange={dummyOnChange}
               label={fieldName}
               min={form.watch('min')}
@@ -534,6 +534,7 @@ export function FieldConfigPanel({
                         type="number"
                         {...field}
                         onChange={e => field.onChange(Number(e.target.value))}
+                        value={field.value === undefined ? '' : field.value}
                       />
                     </FormControl>
                   </FormItem>
@@ -550,6 +551,7 @@ export function FieldConfigPanel({
                         type="number"
                         {...field}
                         onChange={e => field.onChange(Number(e.target.value))}
+                        value={field.value === undefined ? '' : field.value}
                       />
                     </FormControl>
                   </FormItem>
@@ -683,6 +685,7 @@ export function FieldConfigPanel({
                   <Input 
                     placeholder="e.g. 200px"
                     {...field}
+                    value={String(field.value)}
                   />
                 </FormControl>
                 <FormDescription>

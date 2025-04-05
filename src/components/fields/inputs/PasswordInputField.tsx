@@ -17,6 +17,16 @@ interface PasswordInputFieldProps {
   className?: string;
   floatLabel?: boolean;
   filled?: boolean;
+  // Add additional styling props used in FieldRenderer
+  textAlign?: 'left' | 'center' | 'right';
+  labelPosition?: 'top' | 'left';
+  labelWidth?: number;
+  showBorder?: boolean;
+  roundedCorners?: string;
+  fieldSize?: string;
+  labelSize?: string;
+  colors?: Record<string, string>;
+  customClass?: string;
 }
 
 export function PasswordInputField({
@@ -29,7 +39,16 @@ export function PasswordInputField({
   helpText,
   className,
   floatLabel = false,
-  filled = false
+  filled = false,
+  textAlign,
+  labelPosition,
+  labelWidth,
+  showBorder,
+  roundedCorners,
+  fieldSize,
+  labelSize,
+  colors = {},
+  customClass
 }: PasswordInputFieldProps) {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -38,7 +57,7 @@ export function PasswordInputField({
   };
 
   return (
-    <div className={cn('relative space-y-1', className)}>
+    <div className={cn('relative space-y-1', className, customClass)}>
       {label && (
         <Label 
           htmlFor={id}
@@ -46,6 +65,11 @@ export function PasswordInputField({
             "text-sm font-medium",
             floatLabel && value ? "absolute top-0 left-3 -translate-y-1/2 bg-background px-1 text-xs" : ""
           )}
+          style={{
+            textAlign: textAlign,
+            width: labelPosition === 'left' ? `${labelWidth}%` : undefined,
+            fontSize: labelSize === 'small' ? '0.875rem' : labelSize === 'large' ? '1.125rem' : undefined
+          }}
         >
           {label}{required && <span className="text-red-500 ml-1">*</span>}
         </Label>
@@ -63,6 +87,13 @@ export function PasswordInputField({
             filled && "bg-gray-100",
             floatLabel && "pt-4"
           )}
+          style={{
+            borderRadius: roundedCorners === 'large' ? '0.5rem' : roundedCorners === 'small' ? '0.25rem' : undefined,
+            borderWidth: showBorder ? '1px' : '0',
+            borderColor: colors.border,
+            color: colors.text,
+            backgroundColor: filled ? (colors.background || '#f1f5f9') : undefined
+          }}
           aria-describedby={helpText ? `${id}-description` : undefined}
         />
         <Button

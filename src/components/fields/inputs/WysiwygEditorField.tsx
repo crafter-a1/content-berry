@@ -18,6 +18,8 @@ interface WysiwygEditorFieldProps {
   helpText?: string;
   className?: string;
   minHeight?: string;
+  // Added styling props to match what's used in FieldRenderer
+  customClass?: string;
 }
 
 export function WysiwygEditorField({
@@ -29,10 +31,11 @@ export function WysiwygEditorField({
   required = false,
   helpText,
   className,
-  minHeight = '200px'
+  minHeight = '200px',
+  customClass
 }: WysiwygEditorFieldProps) {
   return (
-    <div className={cn('space-y-2', className)}>
+    <div className={cn('space-y-2', className, customClass)}>
       <BlockEditorField
         id={id}
         label={label}
