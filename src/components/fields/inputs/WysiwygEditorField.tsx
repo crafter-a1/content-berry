@@ -16,8 +16,8 @@ interface WysiwygEditorFieldProps {
   placeholder?: string;
   required?: boolean;
   helpText?: string;
-  className?: string;
   minHeight?: string;
+  customClass?: string;
 }
 
 export function WysiwygEditorField({
@@ -28,11 +28,11 @@ export function WysiwygEditorField({
   placeholder = 'Enter content...',
   required = false,
   helpText,
-  className,
-  minHeight = '200px'
+  minHeight = '200px',
+  customClass
 }: WysiwygEditorFieldProps) {
   return (
-    <div className={cn('space-y-2', className)}>
+    <div className={cn('space-y-2', customClass)}>
       <BlockEditorField
         id={id}
         label={label}

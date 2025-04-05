@@ -18,18 +18,17 @@ export default function Users() {
   
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+  const handleInputChange = (field: string, value: string) => {
     setFormData({
       ...formData,
-      [name]: value
+      [field]: value
     });
     
     // Clear error when typing
-    if (errors[name]) {
+    if (errors[field]) {
       setErrors({
         ...errors,
-        [name]: ''
+        [field]: ''
       });
     }
   };
@@ -103,7 +102,7 @@ export default function Users() {
                   label="First Name"
                   placeholder="Enter first name"
                   value={formData.firstName}
-                  onChange={handleInputChange}
+                  onChange={(value) => handleInputChange('firstName', value)}
                   invalid={!!errors.firstName}
                   errorMessage={errors.firstName}
                   required
@@ -115,7 +114,7 @@ export default function Users() {
                   label="Last Name"
                   placeholder="Enter last name"
                   value={formData.lastName}
-                  onChange={handleInputChange}
+                  onChange={(value) => handleInputChange('lastName', value)}
                   invalid={!!errors.lastName}
                   errorMessage={errors.lastName}
                   required
@@ -126,10 +125,9 @@ export default function Users() {
                 id="email"
                 name="email"
                 label="Email Address"
-                type="email"
                 placeholder="Enter email address"
                 value={formData.email}
-                onChange={handleInputChange}
+                onChange={(value) => handleInputChange('email', value)}
                 invalid={!!errors.email}
                 errorMessage={errors.email}
                 required
@@ -142,8 +140,8 @@ export default function Users() {
                 label="Phone Number"
                 placeholder="Enter phone number"
                 value={formData.phone}
-                onChange={handleInputChange}
-                keyFilter="numeric"
+                onChange={(value) => handleInputChange('phone', value)}
+                keyFilter="numbers"
                 invalid={!!errors.phone}
                 errorMessage={errors.phone}
                 helpText="Format: 1234567890"
@@ -155,7 +153,7 @@ export default function Users() {
                 label="Username"
                 placeholder="Choose a username"
                 value={formData.username}
-                onChange={handleInputChange}
+                onChange={(value) => handleInputChange('username', value)}
                 filled
                 floatLabel
                 helpText="Username must be unique"
@@ -165,10 +163,9 @@ export default function Users() {
                 id="password"
                 name="password"
                 label="Password"
-                type="password"
                 placeholder="Create a password"
                 value={formData.password}
-                onChange={handleInputChange}
+                onChange={(value) => handleInputChange('password', value)}
                 invalid={!!errors.password}
                 errorMessage={errors.password}
                 required

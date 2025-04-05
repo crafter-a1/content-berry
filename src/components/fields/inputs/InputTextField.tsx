@@ -1,181 +1,183 @@
 
-import React, { useState } from "react";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import React from 'react';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
-export interface InputTextFieldProps {
+interface InputTextFieldProps {
   id: string;
+  label?: string;
   value: string;
   onChange: (value: string) => void;
-  label?: string;
   placeholder?: string;
-  helpText?: string;
   required?: boolean;
-  keyFilter?: "none" | "letters" | "numbers" | "alphanumeric";
+  helpText?: string;
+  invalid?: boolean;
+  errorMessage?: string;
+  keyFilter?: 'none' | 'letters' | 'numbers' | 'alphanumeric';
   floatLabel?: boolean;
   filled?: boolean;
-  textAlign?: "left" | "center" | "right";
-  labelPosition?: "top" | "left";
+  textAlign?: 'left' | 'center' | 'right';
+  labelPosition?: 'top' | 'left' | 'right';
   labelWidth?: number;
   showBorder?: boolean;
-  roundedCorners?: "none" | "small" | "medium" | "large";
-  fieldSize?: "small" | "medium" | "large";
-  labelSize?: "small" | "medium" | "large";
+  roundedCorners?: 'none' | 'small' | 'medium' | 'large';
+  fieldSize?: 'small' | 'medium' | 'large';
+  labelSize?: 'small' | 'medium' | 'large';
+  className?: string;
   customClass?: string;
-  color?: string;
-  colors?: {
-    border?: string;
-    text?: string;
-    background?: string;
-    focus?: string;
-    label?: string;
-  };
+  name?: string;
+  colors?: Record<string, string>;
+  disabled?: boolean;
 }
 
-export const InputTextField = ({
+export function InputTextField({
   id,
-  value,
-  onChange,
   label,
-  placeholder,
-  helpText,
+  value = '',
+  onChange,
+  placeholder = '',
   required = false,
-  keyFilter = "none",
+  helpText,
+  invalid = false,
+  errorMessage,
+  keyFilter = 'none',
   floatLabel = false,
   filled = false,
-  textAlign = "left",
-  labelPosition = "top",
+  textAlign = 'left',
+  labelPosition = 'top',
   labelWidth = 30,
   showBorder = true,
-  roundedCorners = "medium",
-  fieldSize = "medium",
-  labelSize = "medium",
-  customClass = "",
-  colors = {}
-}: InputTextFieldProps) => {
-  const [hasFocus, setHasFocus] = useState(false);
-  
-  // Generate dynamic styles based on props
-  const inputContainerStyle: React.CSSProperties = {
-    display: labelPosition === "left" ? "flex" : "block",
-    alignItems: "center",
-    position: "relative"
-  };
-  
-  const labelStyle: React.CSSProperties = {
-    width: labelPosition === "left" ? `${labelWidth}%` : "auto",
-    fontSize: labelSize === "small" ? "0.875rem" : labelSize === "medium" ? "1rem" : "1.125rem",
-    fontWeight: labelSize === "large" ? 600 : 500,
-    color: colors.label || "#64748b",
-    marginBottom: labelPosition === "top" ? "0.5rem" : "0"
-  };
-  
-  // Get border radius based on roundedCorners prop
-  const getBorderRadius = () => {
-    switch (roundedCorners) {
-      case "none": return "0";
-      case "small": return "0.25rem";
-      case "medium": return "0.375rem";
-      case "large": return "0.5rem";
-      default: return "0.375rem";
+  roundedCorners = 'medium',
+  fieldSize = 'medium',
+  labelSize = 'medium',
+  className,
+  customClass,
+  name,
+  colors,
+  disabled = false
+}: InputTextFieldProps) {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let newValue = e.target.value;
+    
+    // Apply key filtering if specified
+    if (keyFilter !== 'none') {
+      if (keyFilter === 'letters') {
+        newValue = newValue.replace(/[^a-zA-Z\s]/g, '');
+      } else if (keyFilter === 'numbers') {
+        newValue = newValue.replace(/[^0-9]/g, '');
+      } else if (keyFilter === 'alphanumeric') {
+        newValue = newValue.replace(/[^a-zA-Z0-9\s]/g, '');
+      }
     }
-  };
-  
-  // Get padding based on fieldSize prop
-  const getPadding = () => {
-    switch (fieldSize) {
-      case "small": return "0.375rem 0.5rem";
-      case "medium": return "0.5rem 0.75rem";
-      case "large": return "0.75rem 1rem";
-      default: return "0.5rem 0.75rem";
-    }
-  };
-  
-  const inputStyle: React.CSSProperties = {
-    width: labelPosition === "left" ? `${100 - labelWidth}%` : "100%",
-    backgroundColor: filled ? (colors.background || "#f1f5f9") : "transparent",
-    border: showBorder ? `1px solid ${colors.border || "#e2e8f0"}` : "none",
-    borderRadius: getBorderRadius(),
-    padding: getPadding(),
-    fontSize: fieldSize === "small" ? "0.875rem" : fieldSize === "medium" ? "1rem" : "1.125rem",
-    textAlign: textAlign,
-    color: colors.text || "#1e293b",
+    
+    onChange(newValue);
   };
 
-  // Filter key presses based on keyFilter prop
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const key = e.key;
-    
-    if (keyFilter === "letters" && !/^[a-zA-Z\s]$/.test(key)) {
-      if (key !== "Backspace" && key !== "Delete" && key !== "ArrowLeft" && key !== "ArrowRight") {
-        e.preventDefault();
-      }
-    } else if (keyFilter === "numbers" && !/^[0-9]$/.test(key)) {
-      if (key !== "Backspace" && key !== "Delete" && key !== "ArrowLeft" && key !== "ArrowRight") {
-        e.preventDefault();
-      }
-    } else if (keyFilter === "alphanumeric" && !/^[a-zA-Z0-9\s]$/.test(key)) {
-      if (key !== "Backspace" && key !== "Delete" && key !== "ArrowLeft" && key !== "ArrowRight") {
-        e.preventDefault();
-      }
+  // Generate rounded corner classes based on the roundedCorners prop
+  const getRoundedClass = () => {
+    switch (roundedCorners) {
+      case 'none': return 'rounded-none';
+      case 'small': return 'rounded-sm';
+      case 'large': return 'rounded-lg';
+      default: return 'rounded-md';
     }
   };
+
+  // Generate size classes based on the fieldSize prop
+  const getSizeClass = () => {
+    switch (fieldSize) {
+      case 'small': return 'h-8 text-xs px-2';
+      case 'large': return 'h-12 text-base px-4';
+      default: return 'h-10 text-sm px-3';
+    }
+  };
+
+  // Generate label size classes based on the labelSize prop
+  const getLabelSizeClass = () => {
+    switch (labelSize) {
+      case 'small': return 'text-xs';
+      case 'large': return 'text-base';
+      default: return 'text-sm';
+    }
+  };
+
+  const inputClassName = cn(
+    getRoundedClass(),
+    getSizeClass(),
+    filled && 'bg-gray-100',
+    !showBorder && 'border-0',
+    invalid && 'border-red-500 focus-visible:ring-red-500',
+    disabled && 'opacity-50 cursor-not-allowed',
+    customClass
+  );
 
   return (
-    <div className={cn("space-y-2", customClass)} style={inputContainerStyle}>
-      {label && !floatLabel && (
+    <div className={cn(
+      'space-y-2',
+      labelPosition === 'left' && 'flex items-center gap-2',
+      labelPosition === 'right' && 'flex flex-row-reverse items-center gap-2',
+      className
+    )}>
+      {label && (
         <Label 
-          htmlFor={id} 
-          style={labelStyle}
-          className={required ? "after:content-['*'] after:ml-1 after:text-red-600" : ""}
+          htmlFor={id}
+          className={cn(
+            getLabelSizeClass(),
+            labelPosition === 'left' && `w-${labelWidth}`,
+            labelPosition === 'right' && `w-${labelWidth}`,
+            floatLabel && value 
+              ? "absolute top-0 left-3 -translate-y-1/2 bg-background px-1 text-xs z-10" 
+              : ""
+          )}
         >
-          {label}
+          {label}{required && <span className="text-red-500 ml-1">*</span>}
         </Label>
       )}
-      <div 
-        className={cn(
-          "relative",
-          floatLabel && "pt-4"
-        )}
-        style={{ width: labelPosition === "left" ? `${100 - labelWidth}%` : "100%" }}
-      >
-        {floatLabel && label && (
-          <Label
-            htmlFor={id}
-            className={cn(
-              "absolute transition-all duration-200 pointer-events-none",
-              (hasFocus || value) ? "-top-3 left-2 bg-white px-1 text-xs" : "top-1/2 left-3 -translate-y-1/2"
-            )}
-            style={{
-              color: hasFocus ? (colors.focus || "#3b82f6") : (colors.label || "#64748b"),
-              zIndex: 10
-            }}
-          >
-            {label}
-          </Label>
-        )}
+      
+      <div className={cn(
+        'relative',
+        labelPosition === 'left' && `w-[calc(100%-${labelWidth}%)]`,
+        labelPosition === 'right' && `w-[calc(100%-${labelWidth}%)]`
+      )}>
         <Input
           id={id}
+          name={name}
+          type="text"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={floatLabel && label ? "" : placeholder}
-          onFocus={() => setHasFocus(true)}
-          onBlur={() => setHasFocus(false)}
-          onKeyDown={handleKeyPress}
+          onChange={handleInputChange}
+          placeholder={placeholder}
           required={required}
-          style={inputStyle}
-          className={cn(
-            "focus:ring-1 focus:ring-offset-0",
-            hasFocus && "outline-none"
-          )}
+          className={inputClassName}
+          style={{
+            textAlign,
+            ...(colors && {
+              color: colors.textColor || 'inherit',
+              backgroundColor: colors.backgroundColor || (filled ? 'rgb(243 244 246)' : 'inherit'),
+              borderColor: invalid 
+                ? colors.errorBorderColor || 'rgb(239 68 68)'
+                : colors.borderColor || 'inherit'
+            })
+          }}
+          aria-describedby={helpText || errorMessage ? `${id}-description` : undefined}
+          aria-invalid={invalid}
+          disabled={disabled}
         />
       </div>
-      {helpText && (
-        <p className="text-sm text-gray-500">{helpText}</p>
+      
+      {(helpText || errorMessage) && (
+        <p 
+          id={`${id}-description`} 
+          className={cn(
+            'text-xs',
+            invalid ? 'text-red-500' : 'text-muted-foreground'
+          )}
+        >
+          {invalid ? errorMessage : helpText}
+        </p>
       )}
     </div>
   );
-};
+}
 
 export default InputTextField;

@@ -49,6 +49,13 @@ interface AppearanceSettings {
   isDarkMode?: boolean;
   customClass?: string;
   customCss?: string;
+  colors?: {
+    textColor?: string;
+    backgroundColor?: string;
+    borderColor?: string;
+    labelColor?: string;
+    helpTextColor?: string;
+  };
 }
 
 const appearanceSchema = z.object({
@@ -69,6 +76,13 @@ const appearanceSchema = z.object({
   isDarkMode: z.boolean().default(false),
   customClass: z.string().optional(),
   customCss: z.string().optional(),
+  colors: z.object({
+    textColor: z.string().optional(),
+    backgroundColor: z.string().optional(),
+    borderColor: z.string().optional(),
+    labelColor: z.string().optional(),
+    helpTextColor: z.string().optional(),
+  }).optional(),
 });
 
 interface FieldAppearancePanelProps {
@@ -80,11 +94,11 @@ interface FieldAppearancePanelProps {
 export function FieldAppearancePanel({ fieldType, initialData = {}, onSave }: FieldAppearancePanelProps) {
   const [activeTab, setActiveTab] = useState<string>('layout');
   const [colorSettings, setColorSettings] = useState({
-    textColor: '',
-    backgroundColor: '',
-    borderColor: '',
-    labelColor: '',
-    helpTextColor: '',
+    textColor: initialData?.colors?.textColor || '',
+    backgroundColor: initialData?.colors?.backgroundColor || '',
+    borderColor: initialData?.colors?.borderColor || '',
+    labelColor: initialData?.colors?.labelColor || '',
+    helpTextColor: initialData?.colors?.helpTextColor || '',
   });
 
   const form = useForm<AppearanceSettings>({
@@ -107,6 +121,13 @@ export function FieldAppearancePanel({ fieldType, initialData = {}, onSave }: Fi
       isDarkMode: initialData.isDarkMode || false,
       customClass: initialData.customClass || '',
       customCss: initialData.customCss || '',
+      colors: initialData.colors || {
+        textColor: '',
+        backgroundColor: '',
+        borderColor: '',
+        labelColor: '',
+        helpTextColor: '',
+      },
     },
   });
   
@@ -115,9 +136,7 @@ export function FieldAppearancePanel({ fieldType, initialData = {}, onSave }: Fi
       // Combine form data with color settings
       const combinedData = {
         ...data,
-        colors: {
-          ...colorSettings,
-        },
+        colors: colorSettings,
       };
       
       onSave(combinedData);
@@ -142,9 +161,7 @@ export function FieldAppearancePanel({ fieldType, initialData = {}, onSave }: Fi
     const formValues = form.getValues();
     onSave({
       ...formValues,
-      colors: {
-        ...colors,
-      },
+      colors: colors,
     });
   };
   

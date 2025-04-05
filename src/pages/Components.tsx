@@ -60,6 +60,7 @@ export default function Components() {
                       <div className="p-4 border rounded-md">
                         <h3 className="text-sm font-medium mb-3">1. Basic Number</h3>
                         <NumberInputField 
+                          id="basic-number"
                           value={numberValue} 
                           onChange={setNumberValue}
                           label="Basic Number Input"
@@ -69,17 +70,17 @@ export default function Components() {
                       <div className="p-4 border rounded-md">
                         <h3 className="text-sm font-medium mb-3">2. Localized Numbers</h3>
                         <NumberInputField 
+                          id="us-number"
                           value={numberValue} 
                           onChange={setNumberValue}
                           label="US Format"
-                          locale="en-US"
                         />
                         <div className="mt-4">
                           <NumberInputField 
+                            id="german-number"
                             value={numberValue} 
                             onChange={setNumberValue}
                             label="German Format"
-                            locale="de-DE"
                           />
                         </div>
                       </div>
@@ -87,19 +88,19 @@ export default function Components() {
                       <div className="p-4 border rounded-md">
                         <h3 className="text-sm font-medium mb-3">3. Currency</h3>
                         <NumberInputField 
+                          id="usd-currency"
                           value={numberValue} 
                           onChange={setNumberValue}
                           label="USD Currency"
-                          locale="en-US"
-                          currency="USD"
+                          prefix="$"
                         />
                         <div className="mt-4">
                           <NumberInputField 
+                            id="eur-currency"
                             value={numberValue} 
                             onChange={setNumberValue}
                             label="EUR Currency"
-                            locale="de-DE"
-                            currency="EUR"
+                            prefix="€"
                           />
                         </div>
                       </div>
@@ -107,6 +108,7 @@ export default function Components() {
                       <div className="p-4 border rounded-md">
                         <h3 className="text-sm font-medium mb-3">4. Prefix & Suffix</h3>
                         <NumberInputField 
+                          id="prefix-number"
                           value={numberValue} 
                           onChange={setNumberValue}
                           label="With Prefix"
@@ -114,6 +116,7 @@ export default function Components() {
                         />
                         <div className="mt-4">
                           <NumberInputField 
+                            id="suffix-number"
                             value={numberValue} 
                             onChange={setNumberValue}
                             label="With Suffix"
@@ -127,6 +130,7 @@ export default function Components() {
                       <div className="p-4 border rounded-md">
                         <h3 className="text-sm font-medium mb-3">5. Buttons (Horizontal)</h3>
                         <NumberInputField 
+                          id="horizontal-buttons"
                           value={numberValue} 
                           onChange={setNumberValue}
                           label="Increment/Decrement"
@@ -138,6 +142,7 @@ export default function Components() {
                       <div className="p-4 border rounded-md">
                         <h3 className="text-sm font-medium mb-3">6. Buttons (Vertical)</h3>
                         <NumberInputField 
+                          id="vertical-buttons"
                           value={numberValue} 
                           onChange={setNumberValue}
                           label="Vertical Layout"
@@ -149,6 +154,7 @@ export default function Components() {
                       <div className="p-4 border rounded-md">
                         <h3 className="text-sm font-medium mb-3">7. Float Label & Filled Style</h3>
                         <NumberInputField 
+                          id="float-label-number"
                           value={numberValue} 
                           onChange={setNumberValue}
                           label="Float Label"
@@ -156,6 +162,7 @@ export default function Components() {
                         />
                         <div className="mt-4">
                           <NumberInputField 
+                            id="filled-number"
                             value={numberValue} 
                             onChange={setNumberValue}
                             label="Filled Style"
@@ -167,6 +174,7 @@ export default function Components() {
                       <div className="p-4 border rounded-md">
                         <h3 className="text-sm font-medium mb-3">8. States</h3>
                         <NumberInputField 
+                          id="invalid-number"
                           value={numberValue} 
                           onChange={setNumberValue}
                           label="Invalid State"
@@ -174,6 +182,7 @@ export default function Components() {
                         />
                         <div className="mt-4">
                           <NumberInputField 
+                            id="disabled-number"
                             value={numberValue} 
                             onChange={setNumberValue}
                             label="Disabled State"
@@ -185,6 +194,7 @@ export default function Components() {
                       <div className="p-4 border rounded-md">
                         <h3 className="text-sm font-medium mb-3">9. Accessibility</h3>
                         <NumberInputField 
+                          id="accessible-number"
                           value={numberValue} 
                           onChange={setNumberValue}
                           label="With Accessibility Features"

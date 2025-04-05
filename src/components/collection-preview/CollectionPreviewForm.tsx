@@ -139,9 +139,9 @@ export function CollectionPreviewForm({
                 <FieldRenderer
                   key={field.id}
                   field={field}
-                  formData={formData}
-                  titleField={titleField}
-                  onInputChange={handleInputChange}
+                  value={formData[field.id]}
+                  onChange={handleInputChange}
+                  errors={{}}
                 />
               ))}
             </div>
@@ -225,3 +225,4 @@ export function CollectionPreviewForm({
     </>
   );
 }
+
