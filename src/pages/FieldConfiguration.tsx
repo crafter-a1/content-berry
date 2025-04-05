@@ -19,7 +19,6 @@ import { CollectionPreviewForm } from '@/components/collection-preview/Collectio
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import JSONEditorField from '@/components/fields/inputs/JSONEditorField';
 import { FieldAdvancedPanel } from '@/components/fields/FieldAdvancedPanel';
-import { FieldAppearancePanel } from '@/components/fields/FieldAppearancePanel';
 
 const fieldTypes = {
   'Text & Numbers': [
