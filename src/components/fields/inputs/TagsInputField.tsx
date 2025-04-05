@@ -1,19 +1,20 @@
 
-import React, { useState, KeyboardEvent } from 'react';
+import React, { useState, useRef, KeyboardEvent } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { X } from 'lucide-react';
 
 interface TagsInputFieldProps {
   id: string;
   label?: string;
-  value: string[];
+  value?: string[];
   onChange: (value: string[]) => void;
   placeholder?: string;
   required?: boolean;
   helpText?: string;
+  className?: string;
   maxTags?: number;
 }
 
@@ -22,80 +23,111 @@ export function TagsInputField({
   label,
   value = [],
   onChange,
-  placeholder = 'Add a tag...',
+  placeholder = 'Add tags...',
   required = false,
   helpText,
+  className,
   maxTags = 10
 }: TagsInputFieldProps) {
   const [inputValue, setInputValue] = useState('');
-  
-  const addTag = (tag: string) => {
-    tag = tag.trim();
-    if (!tag) return;
-    if (value.includes(tag)) return;
-    if (value.length >= maxTags) return;
-    
-    onChange([...value, tag]);
-    setInputValue('');
-  };
-  
-  const removeTag = (tag: string) => {
-    onChange(value.filter(t => t !== tag));
-  };
-  
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    const trimmedInput = inputValue.trim();
+    
     // Add tag on Enter or comma
-    if (e.key === 'Enter' || e.key === ',') {
+    if ((e.key === 'Enter' || e.key === ',') && trimmedInput) {
       e.preventDefault();
-      addTag(inputValue);
+      
+      if (value.includes(trimmedInput)) {
+        // Tag already exists
+        setInputValue('');
+        return;
+      }
+      
+      if (value.length >= maxTags) {
+        // Maximum tags reached
+        return;
+      }
+      
+      const newTags = [...value, trimmedInput];
+      onChange(newTags);
+      setInputValue('');
     }
     
     // Remove last tag on Backspace if input is empty
     if (e.key === 'Backspace' && !inputValue && value.length > 0) {
-      removeTag(value[value.length - 1]);
+      const newTags = value.slice(0, -1);
+      onChange(newTags);
     }
   };
-  
+
+  const removeTag = (tagToRemove: string) => {
+    const newTags = value.filter(tag => tag !== tagToRemove);
+    onChange(newTags);
+    inputRef.current?.focus();
+  };
+
   return (
-    <div className="space-y-2">
+    <div className={cn('space-y-2', className)}>
       {label && (
         <Label htmlFor={id}>
           {label}{required && <span className="text-red-500 ml-1">*</span>}
         </Label>
       )}
       
-      <div className="border rounded-md p-1 flex flex-wrap gap-1">
+      <div 
+        className={cn(
+          "flex flex-wrap gap-2 p-2 bg-background border border-input rounded-md focus-within:ring-1 focus-within:ring-ring",
+          value.length === 0 && "min-h-10"
+        )}
+        onClick={() => inputRef.current?.focus()}
+      >
         {value.map((tag, index) => (
-          <Badge 
+          <Badge
             key={`${tag}-${index}`}
             variant="secondary"
-            className="px-2 py-1"
+            className="flex items-center gap-1 text-sm px-2 py-1"
           >
             {tag}
             <button
               type="button"
-              className="ml-1 rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              onClick={() => removeTag(tag)}
+              onClick={(e) => {
+                e.stopPropagation();
+                removeTag(tag);
+              }}
+              aria-label={`Remove ${tag}`}
+              className="h-4 w-4 rounded-full hover:bg-muted-foreground/20 flex items-center justify-center"
             >
-              <X className="h-3 w-3" />
+              <X size={12} />
             </button>
           </Badge>
         ))}
         
         <Input
+          ref={inputRef}
           id={id}
+          type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          onBlur={() => addTag(inputValue)}
-          placeholder={value.length < maxTags ? placeholder : `Maximum ${maxTags} tags`}
-          className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-1 py-0 h-8"
+          placeholder={value.length === 0 ? placeholder : ''}
+          className="flex-1 min-w-[120px] border-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-7"
+          aria-describedby={helpText ? `${id}-description` : undefined}
           disabled={value.length >= maxTags}
         />
       </div>
       
       {helpText && (
-        <p className="text-sm text-muted-foreground">{helpText}</p>
+        <p id={`${id}-description`} className="text-muted-foreground text-xs">
+          {helpText}
+        </p>
+      )}
+      
+      {maxTags && (
+        <p className="text-muted-foreground text-xs">
+          {value.length} of {maxTags} tags used
+        </p>
       )}
     </div>
   );

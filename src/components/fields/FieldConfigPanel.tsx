@@ -273,8 +273,6 @@ export function FieldConfigPanel({
             <InputTextField
               id="preview-field"
               label={fieldName}
-              value=""
-              onChange={() => {}}
               placeholder={placeholder}
               helpText={helpText}
               keyFilter={form.watch('keyFilter') || "none"}
@@ -383,9 +381,7 @@ export function FieldConfigPanel({
               label={fieldName}
               placeholder={placeholder}
               helpText={helpText}
-              minHeight={typeof form.watch('minHeight') === 'string' 
-                ? form.watch('minHeight') 
-                : "100px"}
+              minHeight="100px"
             />
           </div>
         );
@@ -400,9 +396,7 @@ export function FieldConfigPanel({
               label={fieldName}
               placeholder={placeholder}
               helpText={helpText}
-              minHeight={typeof form.watch('minHeight') === 'string' 
-                ? form.watch('minHeight') 
-                : "100px"}
+              minHeight="100px"
             />
           </div>
         );
@@ -696,7 +690,7 @@ export function FieldConfigPanel({
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="general">
+          <TabsContent value="general" className="space-y-6">
             <div className="grid grid-cols-2 gap-6">
               <FormField
                 control={form.control}
@@ -846,7 +840,7 @@ export function FieldConfigPanel({
           </TabsContent>
           
           <TabsContent value="appearance">
-            <FieldAppearancePanel 
+            <FieldAppearancePanel
               fieldType={fieldType}
               initialData={appearanceSettings}
               onSave={handleUpdateAppearance}

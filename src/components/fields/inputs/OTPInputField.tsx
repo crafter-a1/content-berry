@@ -1,16 +1,17 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 interface OTPInputFieldProps {
   id: string;
   label?: string;
-  value: string;
+  value?: string;
   onChange: (value: string) => void;
   length?: number;
+  required?: boolean;
   helpText?: string;
+  className?: string;
 }
 
 export function OTPInputField({
@@ -19,122 +20,119 @@ export function OTPInputField({
   value = '',
   onChange,
   length = 6,
-  helpText
+  required = false,
+  helpText,
+  className
 }: OTPInputFieldProps) {
-  const [otp, setOtp] = useState<string[]>(
-    Array(length).fill('').map((_, i) => value[i] || '')
-  );
+  const [otp, setOtp] = useState<string[]>(Array(length).fill(''));
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  
-  // Initialize refs array
+
+  // Initialize input refs
   useEffect(() => {
     inputRefs.current = inputRefs.current.slice(0, length);
   }, [length]);
-  
-  // Update OTP array when value prop changes
+
+  // Update OTP state when value prop changes
   useEffect(() => {
-    const newOtp = Array(length).fill('').map((_, i) => value[i] || '');
-    setOtp(newOtp);
+    if (value) {
+      const otpArray = value.split('').slice(0, length);
+      setOtp([...otpArray, ...Array(length - otpArray.length).fill('')]);
+    } else {
+      setOtp(Array(length).fill(''));
+    }
   }, [value, length]);
-  
+
+  // Handle input change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
-    const newValue = e.target.value.slice(-1); // Only take last character
+    const newValue = e.target.value;
     
-    // Only allow numbers
-    if (newValue && !/\d/.test(newValue)) return;
+    // Only accept single digits
+    if (newValue && !/^\d*$/.test(newValue)) {
+      return;
+    }
     
     // Update the OTP array
     const newOtp = [...otp];
-    newOtp[index] = newValue;
+    newOtp[index] = newValue.slice(-1); // Take only the last character
     setOtp(newOtp);
     
-    // Call the onChange with the full OTP string
+    // Notify parent component
     onChange(newOtp.join(''));
     
-    // Move to next input if current input is filled
+    // Move focus to next input if value is entered
     if (newValue && index < length - 1) {
       inputRefs.current[index + 1]?.focus();
     }
   };
-  
+
+  // Handle backspace key
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
-    // Move to previous input on backspace if current input is empty
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      // Move focus to previous input on backspace if current input is empty
       inputRefs.current[index - 1]?.focus();
-    }
-    
-    // Move to next input on right arrow
-    if (e.key === 'ArrowRight' && index < length - 1) {
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      // Move focus to previous input on left arrow
+      inputRefs.current[index - 1]?.focus();
+    } else if (e.key === 'ArrowRight' && index < length - 1) {
+      // Move focus to next input on right arrow
       inputRefs.current[index + 1]?.focus();
     }
-    
-    // Move to previous input on left arrow
-    if (e.key === 'ArrowLeft' && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
   };
-  
+
+  // Handle paste event
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text/plain').slice(0, length);
+    const pasteData = e.clipboardData.getData('text/plain').trim();
     
-    // Only allow digits
-    const digits = pastedData.replace(/\D/g, '');
-    
-    if (!digits) return;
-    
-    const newOtp = [...otp];
-    
-    // Fill the OTP array with the pasted digits
-    for (let i = 0; i < digits.length; i++) {
-      if (i < length) {
-        newOtp[i] = digits[i];
-      }
+    if (!pasteData || !/^\d*$/.test(pasteData)) {
+      return;
     }
+    
+    const otpDigits = pasteData.slice(0, length).split('');
+    const newOtp = [...Array(length).fill('')];
+    
+    otpDigits.forEach((digit, idx) => {
+      newOtp[idx] = digit;
+    });
     
     setOtp(newOtp);
     onChange(newOtp.join(''));
     
     // Focus the next empty input or the last input
-    for (let i = digits.length; i < length; i++) {
-      if (i < length) {
-        inputRefs.current[i]?.focus();
-        break;
-      }
-    }
-    
-    if (digits.length >= length) {
-      inputRefs.current[length - 1]?.focus();
-    }
+    const nextEmptyIndex = otpDigits.length < length ? otpDigits.length : length - 1;
+    inputRefs.current[nextEmptyIndex]?.focus();
   };
-  
+
   return (
-    <div className="space-y-2">
+    <div className={cn('space-y-2', className)}>
       {label && (
-        <Label htmlFor={`${id}-0`}>{label}</Label>
+        <Label htmlFor={`${id}-0`}>
+          {label}{required && <span className="text-red-500 ml-1">*</span>}
+        </Label>
       )}
-      
-      <div className="flex gap-2 justify-center">
-        {Array(length).fill(0).map((_, index) => (
-          <Input
-            key={index}
-            id={`${id}-${index}`}
-            ref={el => inputRefs.current[index] = el}
+      <div className="flex gap-2 items-center justify-center">
+        {Array.from({ length }, (_, i) => (
+          <input
+            key={`${id}-${i}`}
+            ref={(el) => (inputRefs.current[i] = el)}
             type="text"
             inputMode="numeric"
-            value={otp[index] || ''}
-            onChange={(e) => handleChange(e, index)}
-            onKeyDown={(e) => handleKeyDown(e, index)}
-            onPaste={handlePaste}
-            className="w-10 h-12 text-center text-lg"
+            id={`${id}-${i}`}
+            value={otp[i] || ''}
+            onChange={(e) => handleChange(e, i)}
+            onKeyDown={(e) => handleKeyDown(e, i)}
+            onPaste={i === 0 ? handlePaste : undefined}
             maxLength={1}
-            autoComplete="off"
+            className="w-10 h-12 text-center text-lg font-semibold border border-input rounded-md bg-background focus:border-primary focus:ring-1 focus:ring-primary focus-visible:outline-none"
+            aria-label={`digit ${i + 1}`}
+            required={required}
           />
         ))}
       </div>
-      
       {helpText && (
-        <p className="text-sm text-muted-foreground text-center">{helpText}</p>
+        <p id={`${id}-description`} className="text-muted-foreground text-xs text-center">
+          {helpText}
+        </p>
       )}
     </div>
   );

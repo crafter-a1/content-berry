@@ -38,6 +38,7 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
   const hasError = errors && errors[fieldId]?.length > 0;
   const errorMessage = errors && errors[fieldId]?.join(", ");
   
+  // Extract appearance settings
   const appearance = field.appearance || {};
   const {
     textAlign,
@@ -55,8 +56,10 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
     colors = {}
   } = appearance;
   
+  // Extract advanced settings
   const advanced = field.advanced || {};
   
+  // Create a className that includes any error styling
   const fieldClassName = cn(
     customClass || "",
     "w-full",
@@ -129,6 +132,7 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
           placeholder={placeholder}
           required={required}
           helpText={hasError ? errorMessage : helpText}
+          showToggle={advanced.showToggle || true}
           floatLabel={floatLabel || false}
           filled={filled || false}
           textAlign={textAlign || "left"}
@@ -179,6 +183,7 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
           required={required}
           helpText={hasError ? errorMessage : helpText}
           rows={field.rows || 3}
+          customClass={fieldClassName}
         />
       );
 
@@ -193,6 +198,7 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
           required={required}
           helpText={hasError ? errorMessage : helpText}
           minHeight={field.minHeight || "200px"}
+          customClass={fieldClassName}
         />
       );
 
@@ -207,6 +213,7 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
           required={required}
           helpText={hasError ? errorMessage : helpText}
           minHeight={field.minHeight || "200px"}
+          customClass={fieldClassName}
         />
       );
 
@@ -328,6 +335,7 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
           value={value || ""}
           onChange={(newValue) => onChange(fieldId, newValue)}
           helpText={hasError ? errorMessage : helpText}
+          customClass={fieldClassName}
         />
       );
 
@@ -343,6 +351,7 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
           helpText={hasError ? errorMessage : helpText}
           prefix={field.prefix || ""}
           suffix={field.suffix || ""}
+          customClass={fieldClassName}
         />
       );
 
@@ -357,6 +366,7 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
           required={required}
           helpText={hasError ? errorMessage : helpText}
           maxTags={field.maxTags || 10}
+          customClass={fieldClassName}
         />
       );
 
@@ -371,6 +381,7 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
           required={required}
           helpText={hasError ? errorMessage : helpText}
           mask={field.mask || ""}
+          customClass={fieldClassName}
         />
       );
 
@@ -383,6 +394,7 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
           onChange={(newValue) => onChange(fieldId, newValue)}
           length={field.length || 6}
           helpText={hasError ? errorMessage : helpText}
+          customClass={fieldClassName}
         />
       );
 
@@ -397,6 +409,7 @@ export const FieldRenderer = ({ field, value, onChange, errors }: FieldRendererP
           required={required}
           helpText={hasError ? errorMessage : helpText}
           options={field.options || []}
+          customClass={fieldClassName}
         />
       );
 
