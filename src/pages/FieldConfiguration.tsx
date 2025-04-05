@@ -14,11 +14,12 @@ import { toast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getFieldsForCollection, createField, updateField, deleteField, Field, ValidationSettings } from '@/services/CollectionService';
 import { ComponentSelector } from '@/components/components/ComponentSelector';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CollectionPreviewForm } from '@/components/collection-preview/CollectionPreviewForm';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import JSONEditorField from '@/components/fields/inputs/JSONEditorField';
 import { FieldAdvancedPanel } from '@/components/fields/FieldAdvancedPanel';
+import { FieldAppearancePanel } from '@/components/fields/appearance/FieldAppearancePanel';
 
 const fieldTypes = {
   'Text & Numbers': [
@@ -640,10 +641,11 @@ export default function FieldConfiguration() {
           <TabsList>
             <TabsTrigger value="fields">Fields</TabsTrigger>
             <TabsTrigger value="validation">Validation</TabsTrigger>
+            <TabsTrigger value="appearance">Appearance</TabsTrigger>
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="fields">
+          <TabsContent value={activeTab}>
             {renderTabContent()}
           </TabsContent>
         </Tabs>

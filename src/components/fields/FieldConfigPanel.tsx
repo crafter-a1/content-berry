@@ -31,6 +31,7 @@ import { WysiwygEditorField } from './inputs/WysiwygEditorField';
 import { MarkdownEditorField } from './inputs/MarkdownEditorField';
 import { TagsInputField } from './inputs/TagsInputField';
 import { SlugInputField } from './inputs/SlugInputField';
+import { TextareaField } from './inputs/TextareaField';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { ValidationSettings } from '@/services/CollectionService';
@@ -450,17 +451,17 @@ export function FieldConfigPanel({
         return (
           <div className="mt-4 p-4 border rounded-md">
             <h3 className="text-sm font-medium mb-2">Field Preview:</h3>
-            <div className="space-y-2">
-              <Label htmlFor="preview-textarea">{fieldName}</Label>
-              <Textarea
-                id="preview-textarea"
-                placeholder={placeholder}
-                rows={form.watch('rows') || 5}
-              />
-              {helpText && (
-                <p className="text-muted-foreground text-xs">{helpText}</p>
-              )}
-            </div>
+            <TextareaField
+              id="preview-textarea"
+              label={fieldName}
+              value=""
+              onChange={() => {}}
+              placeholder={placeholder}
+              helpText={helpText}
+              rows={form.watch('rows') || 5}
+              floatLabel={appearanceSettings?.floatLabel || false}
+              filled={appearanceSettings?.filled || false}
+            />
           </div>
         );
       default:

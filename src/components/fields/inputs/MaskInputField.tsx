@@ -16,6 +16,15 @@ interface MaskInputFieldProps {
   className?: string;
   floatLabel?: boolean;
   filled?: boolean;
+  textAlign?: 'left' | 'center' | 'right';
+  labelPosition?: 'top' | 'left' | 'right';
+  labelWidth?: number;
+  showBorder?: boolean;
+  roundedCorners?: 'none' | 'small' | 'medium' | 'large';
+  fieldSize?: 'small' | 'medium' | 'large';
+  labelSize?: 'small' | 'medium' | 'large';
+  customClass?: string;
+  colors?: any;
 }
 
 export function MaskInputField({
@@ -29,7 +38,16 @@ export function MaskInputField({
   mask = '',
   className,
   floatLabel = false,
-  filled = false
+  filled = false,
+  textAlign = 'left',
+  labelPosition = 'top',
+  labelWidth = 30,
+  showBorder = true,
+  roundedCorners = 'medium',
+  fieldSize = 'medium',
+  labelSize = 'medium',
+  customClass,
+  colors
 }: MaskInputFieldProps) {
   const [displayValue, setDisplayValue] = useState('');
 
@@ -97,13 +115,17 @@ export function MaskInputField({
   }, [value, mask]);
 
   return (
-    <div className={cn('relative space-y-1', className)}>
+    <div className={cn('relative space-y-1', className, customClass)}>
       {label && (
         <Label 
           htmlFor={id}
           className={cn(
             "text-sm font-medium",
-            floatLabel && displayValue ? "absolute top-0 left-3 -translate-y-1/2 bg-background px-1 text-xs z-10" : ""
+            floatLabel && displayValue ? "absolute top-0 left-3 -translate-y-1/2 bg-background px-1 text-xs z-10" : "",
+            labelSize === 'small' && "text-xs",
+            labelSize === 'large' && "text-base",
+            labelPosition === 'left' && "mb-0",
+            colors?.labelColor && `text-[${colors.labelColor}]`
           )}
         >
           {label}{required && <span className="text-red-500 ml-1">*</span>}
@@ -118,7 +140,17 @@ export function MaskInputField({
         required={required}
         className={cn(
           filled && "bg-gray-100",
-          floatLabel && "pt-4"
+          floatLabel && "pt-4",
+          `text-${textAlign}`,
+          !showBorder && "border-0",
+          roundedCorners === 'none' && "rounded-none",
+          roundedCorners === 'small' && "rounded-sm",
+          roundedCorners === 'large' && "rounded-lg",
+          fieldSize === 'small' && "text-xs px-2 py-1",
+          fieldSize === 'large' && "text-base px-4 py-3",
+          colors?.borderColor && `border-[${colors.borderColor}]`,
+          colors?.backgroundColor && `bg-[${colors.backgroundColor}]`,
+          colors?.textColor && `text-[${colors.textColor}]`
         )}
         aria-describedby={helpText ? `${id}-description` : undefined}
       />
