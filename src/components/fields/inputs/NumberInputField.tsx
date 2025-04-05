@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -31,7 +30,6 @@ export interface NumberInputFieldProps {
   fieldSize?: "small" | "medium" | "large";
   labelSize?: "small" | "medium" | "large";
   customClass?: string;
-  // Add missing props used in Components.tsx
   locale?: string;
   currency?: string;
   invalid?: boolean;
@@ -81,7 +79,6 @@ export const NumberInputField = ({
   const [hasFocus, setHasFocus] = useState(false);
   const [localValue, setLocalValue] = useState<string>(value?.toString() || "");
 
-  // Generate dynamic styles based on props
   const inputContainerStyle: React.CSSProperties = {
     display: labelPosition === "left" ? "flex" : "block",
     alignItems: "center",
@@ -96,7 +93,6 @@ export const NumberInputField = ({
     marginBottom: labelPosition === "top" ? "0.5rem" : "0"
   };
 
-  // Get border radius based on roundedCorners prop
   const getBorderRadius = () => {
     switch (roundedCorners) {
       case "none": return "0";
@@ -107,7 +103,6 @@ export const NumberInputField = ({
     }
   };
 
-  // Get padding based on fieldSize prop
   const getPadding = () => {
     switch (fieldSize) {
       case "small": return "0.375rem 0.5rem";
@@ -128,7 +123,6 @@ export const NumberInputField = ({
     color: colors.text || "#1e293b",
   };
 
-  // Format the value based on locale and currency if provided
   const formatValue = (val: number | null): string => {
     if (val === null) return '';
     
@@ -173,18 +167,15 @@ export const NumberInputField = ({
     
     const inputValue = e.target.value;
     
-    // Allow empty or minus sign for now
     if (inputValue === "" || inputValue === "-") {
       setLocalValue(inputValue);
       return;
     }
     
-    // Remove any non-numeric characters (except decimal point and negative sign)
     const cleanedValue = inputValue.replace(/[^\d.-]/g, '');
     const numberValue = Number(cleanedValue);
     
     if (!isNaN(numberValue)) {
-      // Check min/max constraints
       if ((min === undefined || numberValue >= min) && 
           (max === undefined || numberValue <= max)) {
         setLocalValue(cleanedValue);
@@ -202,7 +193,6 @@ export const NumberInputField = ({
   const handleBlur = () => {
     setHasFocus(false);
     
-    // If empty, set to min or 0
     if (localValue === "" || localValue === "-") {
       const defaultValue = min !== undefined ? min : 0;
       setLocalValue(defaultValue.toString());
@@ -210,7 +200,6 @@ export const NumberInputField = ({
     }
   };
 
-  // Display value should be formatted for display, but editing should use raw value
   const displayValue = hasFocus ? localValue : (locale || currency) && value !== null ? formatValue(value) : localValue;
 
   return (

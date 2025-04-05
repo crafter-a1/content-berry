@@ -393,7 +393,8 @@ export function FieldConfigPanel({
               label={fieldName}
               placeholder={placeholder}
               helpText={helpText}
-              minHeight="100px"
+              minHeight={typeof form.watch('minHeight') === 'number' ? 
+                `${form.watch('minHeight')}px` : form.watch('minHeight') || "100px"}
             />
           </div>
         );
@@ -409,7 +410,8 @@ export function FieldConfigPanel({
               label={fieldName}
               placeholder={placeholder}
               helpText={helpText}
-              minHeight="100px"
+              minHeight={typeof form.watch('minHeight') === 'number' ? 
+                `${form.watch('minHeight')}px` : form.watch('minHeight') || "100px"}
             />
           </div>
         );
@@ -685,7 +687,7 @@ export function FieldConfigPanel({
                   <Input 
                     placeholder="e.g. 200px"
                     {...field}
-                    value={String(field.value)}
+                    value={field.value ? String(field.value) : ''}
                   />
                 </FormControl>
                 <FormDescription>
