@@ -683,10 +683,9 @@ export function FieldConfigPanel({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <Tabs defaultValue="general" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-4 mb-6">
+          <TabsList className="grid grid-cols-3 mb-6">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="validation">Validation</TabsTrigger>
-            <TabsTrigger value="appearance">Appearance</TabsTrigger>
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
           
@@ -836,14 +835,6 @@ export function FieldConfigPanel({
               fieldType={fieldType} 
               initialData={validationSettings}
               onUpdate={handleUpdateValidation}
-            />
-          </TabsContent>
-          
-          <TabsContent value="appearance">
-            <FieldAppearancePanel
-              fieldType={fieldType}
-              initialData={appearanceSettings}
-              onSave={handleUpdateAppearance}
             />
           </TabsContent>
           
