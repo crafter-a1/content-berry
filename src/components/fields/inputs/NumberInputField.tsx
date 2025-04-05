@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -273,7 +274,7 @@ export const NumberInputField = ({
               ...inputStyle,
               paddingLeft: prefix ? "2rem" : inputStyle.padding,
               paddingRight: suffix ? "2rem" : inputStyle.padding,
-              borderColor: invalid ? 'rgb(239, 68, 68)' : inputStyle.border
+              borderColor: invalid ? 'rgb(239, 68, 68)' : (colors.border || "#e2e8f0")
             }}
             className={cn(
               "focus:ring-1 focus:ring-offset-0",

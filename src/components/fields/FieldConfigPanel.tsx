@@ -688,6 +688,9 @@ export function FieldConfigPanel({
                     placeholder="e.g. 200px"
                     {...field}
                     value={field.value ? String(field.value) : ''}
+                    onChange={(e) => {
+                      field.onChange(e.target.value);
+                    }}
                   />
                 </FormControl>
                 <FormDescription>
