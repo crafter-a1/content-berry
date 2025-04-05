@@ -640,12 +640,13 @@ export default function FieldConfiguration() {
           <TabsList>
             <TabsTrigger value="fields">Fields</TabsTrigger>
             <TabsTrigger value="validation">Validation</TabsTrigger>
+            <TabsTrigger value="appearance">Appearance</TabsTrigger>
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="fields">
+          <div className="mt-6">
             {renderTabContent()}
-          </TabsContent>
+          </div>
         </Tabs>
 
         <Dialog open={componentSelectorOpen} onOpenChange={setComponentSelectorOpen}>

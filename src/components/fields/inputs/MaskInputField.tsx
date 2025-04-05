@@ -1,21 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 interface MaskInputFieldProps {
   id: string;
   label?: string;
-  value?: string;
+  value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   required?: boolean;
   helpText?: string;
-  mask?: string;
-  className?: string;
-  floatLabel?: boolean;
-  filled?: boolean;
+  mask: string;
 }
 
 export function MaskInputField({
@@ -26,106 +23,76 @@ export function MaskInputField({
   placeholder = '',
   required = false,
   helpText,
-  mask = '',
-  className,
-  floatLabel = false,
-  filled = false
+  mask = ''
 }: MaskInputFieldProps) {
   const [displayValue, setDisplayValue] = useState('');
 
-  // Function to apply mask to the input value
-  const applyMask = (inputValue: string, inputMask: string): string => {
-    if (!inputMask) return inputValue;
-    
+  // Apply mask to value
+  useEffect(() => {
+    if (!mask) {
+      setDisplayValue(value);
+      return;
+    }
+
     let result = '';
-    let inputIndex = 0;
+    let valueIndex = 0;
 
-    for (let i = 0; i < inputMask.length && inputIndex < inputValue.length; i++) {
-      const maskChar = inputMask[i];
-      const inputChar = inputValue[inputIndex];
+    for (let i = 0; i < mask.length; i++) {
+      if (valueIndex >= value.length) break;
 
-      if (maskChar === '#') {
-        // # indicates a digit
-        if (/\d/.test(inputChar)) {
-          result += inputChar;
-          inputIndex++;
-        } else {
-          inputIndex++;
-          i--;
-        }
-      } else if (maskChar === 'A') {
-        // A indicates a letter
-        if (/[a-zA-Z]/.test(inputChar)) {
-          result += inputChar;
-          inputIndex++;
-        } else {
-          inputIndex++;
-          i--;
-        }
-      } else if (maskChar === '*') {
-        // * indicates any character
-        result += inputChar;
-        inputIndex++;
-      } else {
-        // For any other mask character, add it to the result
+      const maskChar = mask[i];
+      const valueChar = value[valueIndex];
+
+      if (maskChar === '9' && /\d/.test(valueChar)) {
+        result += valueChar;
+        valueIndex++;
+      } else if (maskChar === 'a' && /[a-zA-Z]/.test(valueChar)) {
+        result += valueChar;
+        valueIndex++;
+      } else if (maskChar === '*' && /[a-zA-Z0-9]/.test(valueChar)) {
+        result += valueChar;
+        valueIndex++;
+      } else if (maskChar !== '9' && maskChar !== 'a' && maskChar !== '*') {
         result += maskChar;
-        
-        // Only advance the input index if the current input matches the mask character
-        if (inputChar === maskChar) {
-          inputIndex++;
+        if (valueChar === maskChar) {
+          valueIndex++;
         }
+      } else {
+        valueIndex++;
+        i--;  // Try this position again with next character
       }
     }
 
-    return result;
-  };
-
-  // Handle input change with mask
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value;
-    const maskedValue = mask ? applyMask(rawValue, mask) : rawValue;
-    setDisplayValue(maskedValue);
-    onChange(maskedValue);
-  };
-
-  // Update display value when value prop changes
-  useEffect(() => {
-    if (value !== undefined) {
-      const maskedValue = mask ? applyMask(value, mask) : value;
-      setDisplayValue(maskedValue);
-    }
+    setDisplayValue(result);
   }, [value, mask]);
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    
+    // Extract just the raw data (no mask characters)
+    const rawValue = input.replace(/[^a-zA-Z0-9]/g, '');
+    
+    onChange(rawValue);
+  };
+
   return (
-    <div className={cn('relative space-y-1', className)}>
+    <div className="space-y-2">
       {label && (
-        <Label 
-          htmlFor={id}
-          className={cn(
-            "text-sm font-medium",
-            floatLabel && displayValue ? "absolute top-0 left-3 -translate-y-1/2 bg-background px-1 text-xs z-10" : ""
-          )}
-        >
+        <Label htmlFor={id}>
           {label}{required && <span className="text-red-500 ml-1">*</span>}
         </Label>
       )}
+      
       <Input
-        type="text"
         id={id}
         value={displayValue}
         onChange={handleInputChange}
-        placeholder={placeholder || (mask ? mask.replace(/#/g, '0').replace(/A/g, 'a').replace(/\*/g, 'x') : '')}
+        placeholder={placeholder || mask}
         required={required}
-        className={cn(
-          filled && "bg-gray-100",
-          floatLabel && "pt-4"
-        )}
-        aria-describedby={helpText ? `${id}-description` : undefined}
       />
+      
       {helpText && (
-        <p id={`${id}-description`} className="text-muted-foreground text-xs">
-          {helpText}
-        </p>
+        <p className="text-sm text-muted-foreground">{helpText}</p>
       )}
     </div>
   );

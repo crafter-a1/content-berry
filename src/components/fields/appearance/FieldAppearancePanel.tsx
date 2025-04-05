@@ -1,485 +1,501 @@
 
 import React, { useState, useEffect } from 'react';
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import { Button } from "@/components/ui/button";
-import { toast } from '@/hooks/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ColorPicker } from '@/components/ui/color-picker';
+import { Button } from '@/components/ui/button';
 
 interface FieldAppearancePanelProps {
   fieldType: string | null;
-  initialData: any;
+  initialData?: any;
   onSave: (data: any) => void;
 }
 
-export function FieldAppearancePanel({ fieldType, initialData, onSave }: FieldAppearancePanelProps) {
-  const [appearanceSettings, setAppearanceSettings] = useState<any>({
-    textAlign: 'left',
-    labelPosition: 'top',
-    labelWidth: 30,
-    floatLabel: false,
-    filled: false,
-    showBorder: true,
-    showBackground: true,
-    roundedCorners: 'medium',
-    fieldSize: 'medium',
-    labelSize: 'medium',
-    uiVariant: 'default',
-    customClass: '',
-    customCss: '',
-    colors: {
-      border: '#e2e8f0',
-      text: '#1e293b',
-      background: '#f1f5f9',
-      focus: '#3b82f6',
-      label: '#64748b'
-    },
-    ...initialData
+export function FieldAppearancePanel({ fieldType, initialData = {}, onSave }: FieldAppearancePanelProps) {
+  const [activeTab, setActiveTab] = useState('layout');
+  
+  // Layout settings
+  const [floatLabel, setFloatLabel] = useState(initialData?.floatLabel || false);
+  const [filled, setFilled] = useState(initialData?.filled || false);
+  const [textAlign, setTextAlign] = useState(initialData?.textAlign || 'left');
+  const [labelPosition, setLabelPosition] = useState(initialData?.labelPosition || 'top');
+  const [labelWidth, setLabelWidth] = useState(initialData?.labelWidth || 30);
+  
+  // Style settings
+  const [showBorder, setShowBorder] = useState(initialData?.showBorder !== false);
+  const [showBackground, setShowBackground] = useState(initialData?.showBackground || false);
+  const [roundedCorners, setRoundedCorners] = useState(initialData?.roundedCorners || 'medium');
+  const [fieldSize, setFieldSize] = useState(initialData?.fieldSize || 'medium');
+  const [labelSize, setLabelSize] = useState(initialData?.labelSize || 'medium');
+  const [uiVariant, setUiVariant] = useState(initialData?.uiVariant || 'default');
+  
+  // Advanced settings
+  const [customClass, setCustomClass] = useState(initialData?.customClass || '');
+  const [customCss, setCustomCss] = useState(initialData?.customCss || '');
+  const [isDarkMode, setIsDarkMode] = useState(initialData?.isDarkMode || false);
+  
+  // Color settings
+  const [colors, setColors] = useState(initialData?.colors || {
+    border: '',
+    text: '',
+    background: '',
+    focus: '',
+    label: ''
   });
-
+  
+  // Update settings when initialData changes
   useEffect(() => {
-    setAppearanceSettings({
-      textAlign: 'left',
-      labelPosition: 'top',
-      labelWidth: 30,
-      floatLabel: false,
-      filled: false,
-      showBorder: true,
-      showBackground: true,
-      roundedCorners: 'medium',
-      fieldSize: 'medium',
-      labelSize: 'medium',
-      uiVariant: 'default',
-      customClass: '',
-      customCss: '',
-      colors: {
-        border: '#e2e8f0',
-        text: '#1e293b',
-        background: '#f1f5f9',
-        focus: '#3b82f6',
-        label: '#64748b'
-      },
-      ...initialData
-    });
-  }, [initialData]);
-
-  const handleChange = (property: string, value: any) => {
-    setAppearanceSettings((prev: any) => ({
-      ...prev,
-      [property]: value
-    }));
-  };
-
-  const handleColorChange = (colorType: string, value: string) => {
-    setAppearanceSettings((prev: any) => ({
-      ...prev,
-      colors: {
-        ...prev.colors,
-        [colorType]: value
-      }
-    }));
-  };
-
-  const handleSaveChanges = () => {
-    onSave(appearanceSettings);
-    toast({
-      title: "Appearance settings saved",
-      description: "Your appearance changes have been applied"
-    });
-  };
-
-  const renderFieldSpecificSettings = () => {
-    switch (fieldType) {
-      case 'text':
-      case 'password':
-      case 'number':
-      case 'mask':
-      case 'slug':
-        return (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="textAlign">Text Alignment</Label>
-                <Select
-                  value={appearanceSettings.textAlign || 'left'}
-                  onValueChange={(value) => handleChange('textAlign', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select text alignment" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="left">Left</SelectItem>
-                    <SelectItem value="center">Center</SelectItem>
-                    <SelectItem value="right">Right</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="floatLabel">Float Label</Label>
-                <div className="flex items-center space-x-2 pt-2">
-                  <Switch
-                    id="floatLabel"
-                    checked={!!appearanceSettings.floatLabel}
-                    onCheckedChange={(checked) => handleChange('floatLabel', checked)}
-                  />
-                  <Label htmlFor="floatLabel" className="cursor-pointer">
-                    {appearanceSettings.floatLabel ? 'Enabled' : 'Disabled'}
-                  </Label>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      case 'textarea':
-      case 'markdown':
-        return (
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="rows">Default Rows</Label>
-              <div className="flex items-center space-x-2">
-                <Input
-                  id="rows"
-                  type="number"
-                  min={3}
-                  max={20}
-                  value={appearanceSettings.rows || 5}
-                  onChange={(e) => handleChange('rows', Number(e.target.value))}
-                  className="w-20"
-                />
-                <span className="text-sm text-muted-foreground">rows</span>
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="showCharCount">Character Counter</Label>
-              <div className="flex items-center space-x-2 pt-2">
-                <Switch
-                  id="showCharCount"
-                  checked={!!appearanceSettings.showCharCount}
-                  onCheckedChange={(checked) => handleChange('showCharCount', checked)}
-                />
-                <Label htmlFor="showCharCount" className="cursor-pointer">
-                  {appearanceSettings.showCharCount ? 'Visible' : 'Hidden'}
-                </Label>
-              </div>
-            </div>
-          </div>
-        );
-      case 'wysiwyg':
-      case 'blockeditor':
-        return (
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="minHeight">Minimum Height</Label>
-              <Input
-                id="minHeight"
-                value={appearanceSettings.minHeight || '200px'}
-                onChange={(e) => handleChange('minHeight', e.target.value)}
-                placeholder="e.g. 200px"
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                CSS value (px, rem, vh, etc.)
-              </p>
-            </div>
-            <div>
-              <Label htmlFor="showToolbar">Show Toolbar</Label>
-              <div className="flex items-center space-x-2 pt-2">
-                <Switch
-                  id="showToolbar"
-                  checked={appearanceSettings.showToolbar !== false}
-                  onCheckedChange={(checked) => handleChange('showToolbar', checked)}
-                />
-                <Label htmlFor="showToolbar" className="cursor-pointer">
-                  {appearanceSettings.showToolbar !== false ? 'Visible' : 'Hidden'}
-                </Label>
-              </div>
-            </div>
-          </div>
-        );
-      default:
-        return null;
+    if (initialData) {
+      setFloatLabel(initialData.floatLabel || false);
+      setFilled(initialData.filled || false);
+      setTextAlign(initialData.textAlign || 'left');
+      setLabelPosition(initialData.labelPosition || 'top');
+      setLabelWidth(initialData.labelWidth || 30);
+      setShowBorder(initialData.showBorder !== false);
+      setShowBackground(initialData.showBackground || false);
+      setRoundedCorners(initialData.roundedCorners || 'medium');
+      setFieldSize(initialData.fieldSize || 'medium');
+      setLabelSize(initialData.labelSize || 'medium');
+      setUiVariant(initialData.uiVariant || 'default');
+      setCustomClass(initialData.customClass || '');
+      setCustomCss(initialData.customCss || '');
+      setIsDarkMode(initialData.isDarkMode || false);
+      setColors(initialData.colors || {
+        border: '',
+        text: '',
+        background: '',
+        focus: '',
+        label: ''
+      });
     }
+  }, [initialData]);
+  
+  // Immediately save changes when any setting is updated
+  useEffect(() => {
+    handleSave();
+  }, [
+    floatLabel, 
+    filled, 
+    textAlign, 
+    labelPosition, 
+    labelWidth, 
+    showBorder, 
+    showBackground, 
+    roundedCorners,
+    fieldSize,
+    labelSize,
+    uiVariant
+  ]);
+  
+  const handleSave = () => {
+    const appearanceData = {
+      floatLabel,
+      filled,
+      textAlign,
+      labelPosition,
+      labelWidth,
+      showBorder,
+      showBackground,
+      roundedCorners,
+      fieldSize,
+      labelSize,
+      uiVariant,
+      customClass,
+      customCss,
+      isDarkMode,
+      colors
+    };
+    
+    onSave(appearanceData);
   };
-
+  
+  const handleColorChange = (type: string, value: string) => {
+    setColors((prev) => ({
+      ...prev,
+      [type]: value
+    }));
+    
+    // Save after color change
+    handleSave();
+  };
+  
+  const handleCustomSettingsSave = () => {
+    handleSave();
+  };
+  
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="layout" className="w-full">
-        <TabsList>
+      <h2 className="text-xl font-medium">Appearance Settings</h2>
+      <p className="text-gray-500">
+        Customize how your field looks and behaves
+      </p>
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-4 mb-6">
           <TabsTrigger value="layout">Layout</TabsTrigger>
           <TabsTrigger value="style">Style</TabsTrigger>
           <TabsTrigger value="colors">Colors</TabsTrigger>
-          <TabsTrigger value="advanced">Advanced</TabsTrigger>
+          <TabsTrigger value="custom">Custom</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="layout" className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="labelPosition">Label Position</Label>
-              <Select
-                value={appearanceSettings.labelPosition || 'top'}
-                onValueChange={(value) => handleChange('labelPosition', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Label position" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="top">Top</SelectItem>
-                  <SelectItem value="left">Left</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {appearanceSettings.labelPosition === 'left' && (
-              <div>
-                <Label htmlFor="labelWidth">Label Width (%)</Label>
-                <div className="flex items-center space-x-4">
-                  <Slider
-                    id="labelWidth"
-                    value={[appearanceSettings.labelWidth || 30]}
-                    min={10}
-                    max={50}
-                    step={5}
-                    onValueChange={(value) => handleChange('labelWidth', value[0])}
-                    className="flex-1"
+        <TabsContent value="layout">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <div className="flex flex-row items-center justify-between space-x-2">
+                  <div>
+                    <Label htmlFor="floatLabel">Floating Label</Label>
+                    <p className="text-sm text-gray-500">
+                      Label floats above the input when focused or filled
+                    </p>
+                  </div>
+                  <Switch
+                    id="floatLabel"
+                    checked={floatLabel}
+                    onCheckedChange={setFloatLabel}
                   />
-                  <span className="w-12 text-center">{appearanceSettings.labelWidth || 30}%</span>
                 </div>
+                
+                <div className="flex flex-row items-center justify-between space-x-2">
+                  <div>
+                    <Label htmlFor="filled">Filled Style</Label>
+                    <p className="text-sm text-gray-500">
+                      Input has a background color
+                    </p>
+                  </div>
+                  <Switch
+                    id="filled"
+                    checked={filled}
+                    onCheckedChange={setFilled}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="textAlign">Text Alignment</Label>
+                  <Select
+                    value={textAlign}
+                    onValueChange={setTextAlign}
+                  >
+                    <SelectTrigger id="textAlign">
+                      <SelectValue placeholder="Text alignment" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="left">Left</SelectItem>
+                      <SelectItem value="center">Center</SelectItem>
+                      <SelectItem value="right">Right</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="labelPosition">Label Position</Label>
+                  <Select
+                    value={labelPosition}
+                    onValueChange={setLabelPosition}
+                  >
+                    <SelectTrigger id="labelPosition">
+                      <SelectValue placeholder="Label position" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="top">Top</SelectItem>
+                      <SelectItem value="left">Left</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {labelPosition === 'left' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="labelWidth">
+                      Label Width (%) - {labelWidth}%
+                    </Label>
+                    <Input
+                      id="labelWidth"
+                      type="range"
+                      min={10}
+                      max={50}
+                      value={labelWidth}
+                      onChange={(e) => setLabelWidth(Number(e.target.value))}
+                      className="w-full"
+                    />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          
-          {renderFieldSpecificSettings()}
+            </CardContent>
+          </Card>
         </TabsContent>
         
-        <TabsContent value="style" className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="fieldSize">Field Size</Label>
-              <Select
-                value={appearanceSettings.fieldSize || 'medium'}
-                onValueChange={(value) => handleChange('fieldSize', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Field size" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="small">Small</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="large">Large</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label htmlFor="labelSize">Label Size</Label>
-              <Select
-                value={appearanceSettings.labelSize || 'medium'}
-                onValueChange={(value) => handleChange('labelSize', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Label size" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="small">Small</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="large">Large</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="roundedCorners">Corner Radius</Label>
-              <Select
-                value={appearanceSettings.roundedCorners || 'medium'}
-                onValueChange={(value) => handleChange('roundedCorners', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Corner radius" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="small">Small</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="large">Large</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label htmlFor="filled">Fill Style</Label>
-              <div className="flex items-center space-x-2 pt-2">
-                <Switch
-                  id="filled"
-                  checked={!!appearanceSettings.filled}
-                  onCheckedChange={(checked) => handleChange('filled', checked)}
-                />
-                <Label htmlFor="filled" className="cursor-pointer">
-                  {appearanceSettings.filled ? 'Filled' : 'Default'}
-                </Label>
-              </div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="showBorder">Show Border</Label>
-              <div className="flex items-center space-x-2 pt-2">
+        <TabsContent value="style">
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex flex-row items-center justify-between space-x-2">
+                <div>
+                  <Label htmlFor="showBorder">Show Border</Label>
+                  <p className="text-sm text-gray-500">
+                    Display a border around the input
+                  </p>
+                </div>
                 <Switch
                   id="showBorder"
-                  checked={appearanceSettings.showBorder !== false}
-                  onCheckedChange={(checked) => handleChange('showBorder', checked)}
+                  checked={showBorder}
+                  onCheckedChange={setShowBorder}
                 />
-                <Label htmlFor="showBorder" className="cursor-pointer">
-                  {appearanceSettings.showBorder !== false ? 'Visible' : 'Hidden'}
-                </Label>
               </div>
-            </div>
-            
-            <div>
-              <Label htmlFor="showBackground">Show Background</Label>
-              <div className="flex items-center space-x-2 pt-2">
+              
+              <div className="flex flex-row items-center justify-between space-x-2">
+                <div>
+                  <Label htmlFor="showBackground">Show Background</Label>
+                  <p className="text-sm text-gray-500">
+                    Display a background color
+                  </p>
+                </div>
                 <Switch
                   id="showBackground"
-                  checked={!!appearanceSettings.showBackground}
-                  onCheckedChange={(checked) => handleChange('showBackground', checked)}
+                  checked={showBackground}
+                  onCheckedChange={setShowBackground}
                 />
-                <Label htmlFor="showBackground" className="cursor-pointer">
-                  {appearanceSettings.showBackground ? 'Visible' : 'Hidden'}
-                </Label>
               </div>
-            </div>
-          </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="roundedCorners">Corner Radius</Label>
+                <Select
+                  value={roundedCorners}
+                  onValueChange={setRoundedCorners}
+                >
+                  <SelectTrigger id="roundedCorners">
+                    <SelectValue placeholder="Corner radius" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="small">Small</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="large">Large</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="fieldSize">Field Size</Label>
+                <Select
+                  value={fieldSize}
+                  onValueChange={setFieldSize}
+                >
+                  <SelectTrigger id="fieldSize">
+                    <SelectValue placeholder="Field size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="small">Small</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="large">Large</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="labelSize">Label Size</Label>
+                <Select
+                  value={labelSize}
+                  onValueChange={setLabelSize}
+                >
+                  <SelectTrigger id="labelSize">
+                    <SelectValue placeholder="Label size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="small">Small</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="large">Large</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="uiVariant">UI Variant</Label>
+                <Select
+                  value={uiVariant}
+                  onValueChange={setUiVariant}
+                >
+                  <SelectTrigger id="uiVariant">
+                    <SelectValue placeholder="UI variant" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Default</SelectItem>
+                    <SelectItem value="outline">Outline</SelectItem>
+                    <SelectItem value="underlined">Underlined</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
         
-        <TabsContent value="colors" className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="borderColor">Border Color</Label>
-              <div className="flex items-center space-x-2">
-                <div 
-                  className="w-6 h-6 rounded border border-gray-300" 
-                  style={{ backgroundColor: appearanceSettings.colors?.border || '#e2e8f0' }}
-                />
-                <Input
-                  id="borderColor"
-                  value={appearanceSettings.colors?.border || '#e2e8f0'}
-                  onChange={(e) => handleColorChange('border', e.target.value)}
-                  className="flex-1"
-                />
+        <TabsContent value="colors">
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="space-y-2">
+                <Label>Border Color</Label>
+                <div className="flex items-center space-x-2">
+                  <ColorPicker
+                    value={colors.border || ''}
+                    onChange={(value) => handleColorChange('border', value)}
+                    presetColors={[
+                      "#e2e8f0", "#cbd5e1", "#94a3b8", "#64748b",
+                      "#ef4444", "#f97316", "#f59e0b", "#eab308",
+                      "#84cc16", "#10b981", "#06b6d4", "#3b82f6"
+                    ]}
+                  />
+                  <Input 
+                    value={colors.border || ''}
+                    onChange={(e) => handleColorChange('border', e.target.value)}
+                    placeholder="#e2e8f0"
+                    className="flex-1"
+                  />
+                </div>
               </div>
-            </div>
-            
-            <div>
-              <Label htmlFor="textColor">Text Color</Label>
-              <div className="flex items-center space-x-2">
-                <div 
-                  className="w-6 h-6 rounded border border-gray-300" 
-                  style={{ backgroundColor: appearanceSettings.colors?.text || '#1e293b' }}
-                />
-                <Input
-                  id="textColor"
-                  value={appearanceSettings.colors?.text || '#1e293b'}
-                  onChange={(e) => handleColorChange('text', e.target.value)}
-                  className="flex-1"
-                />
+              
+              <div className="space-y-2">
+                <Label>Text Color</Label>
+                <div className="flex items-center space-x-2">
+                  <ColorPicker
+                    value={colors.text || ''}
+                    onChange={(value) => handleColorChange('text', value)}
+                    presetColors={[
+                      "#0f172a", "#1e293b", "#334155", "#64748b",
+                      "#94a3b8", "#cbd5e1", "#e2e8f0", "#f1f5f9"
+                    ]}
+                  />
+                  <Input 
+                    value={colors.text || ''}
+                    onChange={(e) => handleColorChange('text', e.target.value)}
+                    placeholder="#1e293b"
+                    className="flex-1"
+                  />
+                </div>
               </div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="backgroundColor">Background Color</Label>
-              <div className="flex items-center space-x-2">
-                <div 
-                  className="w-6 h-6 rounded border border-gray-300" 
-                  style={{ backgroundColor: appearanceSettings.colors?.background || '#f1f5f9' }}
-                />
-                <Input
-                  id="backgroundColor"
-                  value={appearanceSettings.colors?.background || '#f1f5f9'}
-                  onChange={(e) => handleColorChange('background', e.target.value)}
-                  className="flex-1"
-                />
+              
+              <div className="space-y-2">
+                <Label>Background Color</Label>
+                <div className="flex items-center space-x-2">
+                  <ColorPicker
+                    value={colors.background || ''}
+                    onChange={(value) => handleColorChange('background', value)}
+                    presetColors={[
+                      "#f8fafc", "#f1f5f9", "#e2e8f0", "#cbd5e1",
+                      "#94a3b8", "#64748b", "#475569", "#334155"
+                    ]}
+                  />
+                  <Input 
+                    value={colors.background || ''}
+                    onChange={(e) => handleColorChange('background', e.target.value)}
+                    placeholder="#f1f5f9"
+                    className="flex-1"
+                  />
+                </div>
               </div>
-            </div>
-            
-            <div>
-              <Label htmlFor="focusColor">Focus Color</Label>
-              <div className="flex items-center space-x-2">
-                <div 
-                  className="w-6 h-6 rounded border border-gray-300" 
-                  style={{ backgroundColor: appearanceSettings.colors?.focus || '#3b82f6' }}
-                />
-                <Input
-                  id="focusColor"
-                  value={appearanceSettings.colors?.focus || '#3b82f6'}
-                  onChange={(e) => handleColorChange('focus', e.target.value)}
-                  className="flex-1"
-                />
+              
+              <div className="space-y-2">
+                <Label>Focus Color</Label>
+                <div className="flex items-center space-x-2">
+                  <ColorPicker
+                    value={colors.focus || ''}
+                    onChange={(value) => handleColorChange('focus', value)}
+                    presetColors={[
+                      "#3b82f6", "#06b6d4", "#10b981", "#84cc16",
+                      "#eab308", "#f59e0b", "#f97316", "#ef4444"
+                    ]}
+                  />
+                  <Input 
+                    value={colors.focus || ''}
+                    onChange={(e) => handleColorChange('focus', e.target.value)}
+                    placeholder="#3b82f6"
+                    className="flex-1"
+                  />
+                </div>
               </div>
-            </div>
-          </div>
-          
-          <div>
-            <Label htmlFor="labelColor">Label Color</Label>
-            <div className="flex items-center space-x-2">
-              <div 
-                className="w-6 h-6 rounded border border-gray-300" 
-                style={{ backgroundColor: appearanceSettings.colors?.label || '#64748b' }}
-              />
-              <Input
-                id="labelColor"
-                value={appearanceSettings.colors?.label || '#64748b'}
-                onChange={(e) => handleColorChange('label', e.target.value)}
-                className="flex-1"
-              />
-            </div>
-          </div>
+              
+              <div className="space-y-2">
+                <Label>Label Color</Label>
+                <div className="flex items-center space-x-2">
+                  <ColorPicker
+                    value={colors.label || ''}
+                    onChange={(value) => handleColorChange('label', value)}
+                    presetColors={[
+                      "#64748b", "#475569", "#334155", "#1e293b",
+                      "#0f172a", "#94a3b8", "#cbd5e1", "#e2e8f0"
+                    ]}
+                  />
+                  <Input 
+                    value={colors.label || ''}
+                    onChange={(e) => handleColorChange('label', e.target.value)}
+                    placeholder="#64748b"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
         
-        <TabsContent value="advanced" className="space-y-4 pt-4">
-          <div>
-            <Label htmlFor="customClass">Custom CSS Class</Label>
-            <Input
-              id="customClass"
-              value={appearanceSettings.customClass || ''}
-              onChange={(e) => handleChange('customClass', e.target.value)}
-              placeholder="e.g. my-special-field"
-            />
-            <p className="text-sm text-muted-foreground mt-1">
-              Add custom CSS classes to the field
-            </p>
-          </div>
-          
-          <div>
-            <Label htmlFor="customCss">Custom CSS</Label>
-            <Textarea
-              id="customCss"
-              value={appearanceSettings.customCss || ''}
-              onChange={(e) => handleChange('customCss', e.target.value)}
-              placeholder="e.g. .my-field { border-color: red; }"
-              rows={4}
-            />
-            <p className="text-sm text-muted-foreground mt-1">
-              Add custom CSS styles (will be inserted inline)
-            </p>
-          </div>
+        <TabsContent value="custom">
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="customClass">Custom CSS Class</Label>
+                <Input 
+                  id="customClass"
+                  value={customClass}
+                  onChange={(e) => setCustomClass(e.target.value)}
+                  placeholder="e.g. my-custom-field"
+                />
+                <p className="text-xs text-gray-500">
+                  Add custom CSS classes to the field
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="customCss">Custom CSS</Label>
+                <Textarea 
+                  id="customCss"
+                  value={customCss}
+                  onChange={(e) => setCustomCss(e.target.value)}
+                  placeholder="e.g. color: red; font-weight: bold;"
+                  rows={5}
+                />
+                <p className="text-xs text-gray-500">
+                  Add custom CSS styles to the field
+                </p>
+              </div>
+              
+              <div className="flex flex-row items-center justify-between space-x-2">
+                <div>
+                  <Label htmlFor="isDarkMode">Dark Mode</Label>
+                  <p className="text-sm text-gray-500">
+                    Enable dark mode styles for this field
+                  </p>
+                </div>
+                <Switch
+                  id="isDarkMode"
+                  checked={isDarkMode}
+                  onCheckedChange={setIsDarkMode}
+                />
+              </div>
+              
+              <div className="flex justify-end pt-4">
+                <Button 
+                  onClick={handleCustomSettingsSave}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Save Custom Settings
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
-      
-      <div className="flex justify-end pt-4">
-        <Button 
-          onClick={handleSaveChanges}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          Save Appearance Settings
-        </Button>
-      </div>
     </div>
   );
 }
