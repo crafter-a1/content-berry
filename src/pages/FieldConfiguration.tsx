@@ -1,25 +1,54 @@
-import { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MainLayout } from '@/components/layout/MainLayout';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, ArrowLeft, Save, Eye, Trash2, FileType, X } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FieldTypeSelector } from '@/components/fields/FieldTypeSelector';
-import { FieldConfigPanel } from '@/components/fields/FieldConfigPanel';
-import { FieldList } from '@/components/fields/FieldList';
-import { FieldValidationPanel } from '@/components/fields/FieldValidationPanel';
-import { FieldLayoutPanel } from '@/components/fields/FieldLayoutPanel';
-import { toast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getFieldsForCollection, createField, updateField, deleteField, Field, ValidationSettings } from '@/services/CollectionService';
-import { ComponentSelector } from '@/components/components/ComponentSelector';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { CollectionService, ValidationSettings } from '@/services/CollectionService';
+import { FieldConfigPanel } from '@/components/fields/FieldConfigPanel';
+import { MainLayout } from '@/components/layout/MainLayout';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink } from '@/components/ui/breadcrumb';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from '@/hooks/use-toast';
+import { FieldTypeSelector } from '@/components/fields/FieldTypeSelector';
 import { CollectionPreviewForm } from '@/components/collection-preview/CollectionPreviewForm';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
-import JSONEditorField from '@/components/fields/inputs/JSONEditorField';
-import { FieldAdvancedPanel } from '@/components/fields/FieldAdvancedPanel';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
+import { FieldList } from '@/components/fields/FieldList';
+import { 
+  FileJson, 
+  Settings2, 
+  View, 
+  ArrowLeft, 
+  Eye, 
+  Save, 
+  Plus, 
+  Trash2,
+  FileType,
+  X
+} from 'lucide-react';
 import { FieldAppearancePanel } from '@/components/fields/appearance/FieldAppearancePanel';
+import { FieldValidationPanel } from '@/components/fields/FieldValidationPanel';
+import { FieldAdvancedPanel } from '@/components/fields/FieldAdvancedPanel';
+import { FieldLayoutPanel } from '@/components/fields/FieldLayoutPanel';
+import { Button } from '@/components/ui/button';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription 
+} from '@/components/ui/dialog';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog';
+import { JSONEditorField } from '@/components/fields/inputs/JSONEditorField';
+import { ComponentSelector } from '@/components/fields/ComponentSelector';
 
 const fieldTypes = {
   'Text & Numbers': [
@@ -136,12 +165,12 @@ export default function FieldConfiguration() {
   
   const { data: fields = [], isLoading, error } = useQuery({
     queryKey: ['fields', collectionId],
-    queryFn: () => getFieldsForCollection(collectionId!),
+    queryFn: () => CollectionService.getFieldsForCollection(collectionId!),
     enabled: !!collectionId
   });
   
   const createFieldMutation = useMutation({
-    mutationFn: (fieldData: any) => createField(collectionId!, fieldData),
+    mutationFn: (fieldData: any) => CollectionService.createField(collectionId!, fieldData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fields', collectionId] });
       queryClient.invalidateQueries({ queryKey: ['collections'] });
@@ -167,7 +196,7 @@ export default function FieldConfiguration() {
 
   const updateFieldMutation = useMutation({
     mutationFn: ({ fieldId, fieldData }: { fieldId: string, fieldData: any }) => 
-      updateField(collectionId!, fieldId, fieldData),
+      CollectionService.updateField(collectionId!, fieldId, fieldData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fields', collectionId] });
       queryClient.invalidateQueries({ queryKey: ['collections'] });
@@ -188,7 +217,7 @@ export default function FieldConfiguration() {
   });
 
   const deleteFieldMutation = useMutation({
-    mutationFn: (fieldId: string) => deleteField(collectionId!, fieldId),
+    mutationFn: (fieldId: string) => CollectionService.deleteField(collectionId!, fieldId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fields', collectionId] });
       queryClient.invalidateQueries({ queryKey: ['collections'] });
@@ -641,11 +670,10 @@ export default function FieldConfiguration() {
           <TabsList>
             <TabsTrigger value="fields">Fields</TabsTrigger>
             <TabsTrigger value="validation">Validation</TabsTrigger>
-            <TabsTrigger value="appearance">Appearance</TabsTrigger>
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
           
-          <TabsContent value={activeTab}>
+          <TabsContent value="fields">
             {renderTabContent()}
           </TabsContent>
         </Tabs>

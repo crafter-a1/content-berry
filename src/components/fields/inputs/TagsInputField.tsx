@@ -14,8 +14,8 @@ interface TagsInputFieldProps {
   placeholder?: string;
   required?: boolean;
   helpText?: string;
+  className?: string;
   maxTags?: number;
-  customClass?: string;
 }
 
 export function TagsInputField({
@@ -26,8 +26,8 @@ export function TagsInputField({
   placeholder = 'Add tags...',
   required = false,
   helpText,
-  maxTags = 10,
-  customClass
+  className,
+  maxTags = 10
 }: TagsInputFieldProps) {
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -69,7 +69,7 @@ export function TagsInputField({
   };
 
   return (
-    <div className={cn('space-y-2', customClass)}>
+    <div className={cn('space-y-2', className)}>
       {label && (
         <Label htmlFor={id}>
           {label}{required && <span className="text-red-500 ml-1">*</span>}

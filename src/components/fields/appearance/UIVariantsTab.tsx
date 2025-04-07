@@ -1,112 +1,105 @@
 
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-
-interface UIVariant {
-  id: string;
-  name: string;
-  description: string;
-  preview: React.ReactNode;
-}
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 interface UIVariantsTabProps {
-  onUpdate: (variant: string) => void;
-  initialVariant?: string;
+  settings: any;
+  onUpdate: (settings: any) => void;
 }
 
-export function UIVariantsTab({ onUpdate, initialVariant = 'default' }: UIVariantsTabProps) {
-  const handleSelectVariant = (variantId: string) => {
-    onUpdate(variantId);
-  };
-
-  const variants: UIVariant[] = [
+export function UIVariantsTab({ settings, onUpdate }: UIVariantsTabProps) {
+  const variants = [
     {
-      id: 'default',
-      name: 'Default',
-      description: 'Standard UI component',
+      id: 'standard',
+      name: 'Standard',
+      description: 'Classic input with full border',
       preview: (
-        <div className="h-10 w-full border rounded-md bg-background"></div>
-      ),
+        <div className="border rounded-md p-2 w-full">
+          <span className="text-sm">Sample text</span>
+        </div>
+      )
     },
     {
-      id: 'bordered',
-      name: 'Bordered',
-      description: 'Component with distinct borders',
+      id: 'material',
+      name: 'Material',
+      description: 'Modern with floating label',
       preview: (
-        <div className="h-10 w-full border-2 border-black rounded-md bg-background"></div>
-      ),
+        <div className="relative border-b-2 p-2 w-full">
+          <div className="absolute -top-2 left-0 text-xs text-blue-500">Email</div>
+          <span className="text-sm">user@example.com</span>
+        </div>
+      )
     },
     {
-      id: 'shadowed',
-      name: 'Shadowed',
-      description: 'Component with drop shadow',
+      id: 'pill',
+      name: 'Pill',
+      description: 'Rounded with soft appearance',
       preview: (
-        <div className="h-10 w-full border rounded-md shadow-lg bg-background"></div>
-      ),
+        <div className="border rounded-full p-2 px-4 w-full">
+          <span className="text-sm">Sample text</span>
+        </div>
+      )
     },
     {
-      id: 'gradient',
-      name: 'Gradient',
-      description: 'Gradient background',
+      id: 'borderless',
+      name: 'Borderless',
+      description: 'Clean with background only',
       preview: (
-        <div className="h-10 w-full border rounded-md bg-gradient-to-r from-blue-100 to-purple-100"></div>
-      ),
-    },
-    {
-      id: 'outlined',
-      name: 'Outlined',
-      description: 'Outline with transparent background',
-      preview: (
-        <div className="h-10 w-full border-2 border-blue-500 rounded-md bg-transparent"></div>
-      ),
+        <div className="bg-gray-100 rounded-md p-2 w-full">
+          <span className="text-sm">Sample text</span>
+        </div>
+      )
     },
     {
       id: 'underlined',
       name: 'Underlined',
-      description: 'Bottom border only',
+      description: 'Minimal with bottom border',
       preview: (
-        <div className="h-10 w-full border-b-2 border-gray-300 bg-transparent"></div>
-      ),
-    },
+        <div className="border-b p-2 w-full">
+          <span className="text-sm">Sample text</span>
+        </div>
+      )
+    }
   ];
-
+  
   return (
-    <div className="py-4">
-      <h2 className="text-lg font-medium mb-2">UI Variants</h2>
-      <p className="text-sm text-muted-foreground mb-6">
-        Choose an alternative visual style for your field.
+    <div className="space-y-6">
+      <h3 className="text-lg font-medium">UI Variants</h3>
+      <p className="text-sm text-gray-500">
+        Select a predefined style for your input field
       </p>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <RadioGroup
+        value={settings.uiVariant || 'standard'}
+        onValueChange={(value) => onUpdate({ uiVariant: value })}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2"
+      >
         {variants.map((variant) => (
-          <Card
-            key={variant.id}
-            className={`p-4 cursor-pointer hover:border-primary transition-colors ${
-              initialVariant === variant.id ? 'border-2 border-primary' : ''
-            }`}
-            onClick={() => handleSelectVariant(variant.id)}
-          >
-            <div className="mb-3">
-              <h3 className="font-medium">{variant.name}</h3>
-              <p className="text-sm text-muted-foreground">{variant.description}</p>
-            </div>
-            <div className="mb-3">
-              {variant.preview}
-            </div>
-            <Button 
-              variant={initialVariant === variant.id ? "default" : "outline"} 
-              size="sm" 
-              className="w-full"
-              onClick={() => handleSelectVariant(variant.id)}
+          <div key={variant.id} className="relative">
+            <RadioGroupItem
+              value={variant.id}
+              id={`ui-variant-${variant.id}`}
+              className="sr-only"
+            />
+            <Label
+              htmlFor={`ui-variant-${variant.id}`}
+              className={cn(
+                "cursor-pointer flex flex-col h-full border rounded-md p-4 hover:border-primary transition-colors",
+                settings.uiVariant === variant.id && "border-2 border-primary"
+              )}
             >
-              {initialVariant === variant.id ? 'Selected' : 'Select'}
-            </Button>
-          </Card>
+              <span className="font-medium mb-2">{variant.name}</span>
+              <div className="mb-2">
+                {variant.preview}
+              </div>
+              <span className="text-xs text-gray-500">{variant.description}</span>
+            </Label>
+          </div>
         ))}
-      </div>
+      </RadioGroup>
     </div>
   );
 }
-
-export default UIVariantsTab;

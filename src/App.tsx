@@ -7,7 +7,6 @@ import './App.css';
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Collections = lazy(() => import('./pages/Collections'));
 const FieldConfiguration = lazy(() => import('./pages/FieldConfiguration'));
-const CollectionPreview = lazy(() => import('./pages/CollectionPreview'));
 const FieldsShowcase = lazy(() => import('./pages/FieldsShowcase'));
 const Components = lazy(() => import('./pages/Components'));
 const ComponentDetails = lazy(() => import('./pages/ComponentDetails'));
@@ -34,7 +33,6 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/collections" element={<Collections />} />
           <Route path="/collections/:collectionId/fields" element={<FieldConfiguration />} />
-          <Route path="/collections/:collectionId/preview" element={<CollectionPreview />} />
           <Route path="/fields-showcase" element={<FieldsShowcase />} />
           <Route path="/components" element={<Components />} />
           <Route path="/components/:componentId" element={<ComponentDetails />} />

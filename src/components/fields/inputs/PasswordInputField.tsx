@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Eye, EyeOff } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { EyeIcon, EyeOffIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PasswordInputFieldProps {
@@ -14,21 +14,25 @@ interface PasswordInputFieldProps {
   placeholder?: string;
   required?: boolean;
   helpText?: string;
-  invalid?: boolean;
-  errorMessage?: string;
   className?: string;
-  showToggle?: boolean;
+  // Add these additional props from InputTextField
   floatLabel?: boolean;
   filled?: boolean;
-  textAlign?: 'left' | 'center' | 'right';
-  labelPosition?: 'top' | 'left' | 'right';
+  textAlign?: "left" | "center" | "right";
+  labelPosition?: "top" | "left";
   labelWidth?: number;
   showBorder?: boolean;
-  roundedCorners?: 'none' | 'small' | 'medium' | 'large';
-  fieldSize?: 'small' | 'medium' | 'large';
-  labelSize?: 'small' | 'medium' | 'large';
+  roundedCorners?: "none" | "small" | "medium" | "large";
+  fieldSize?: "small" | "medium" | "large";
+  labelSize?: "small" | "medium" | "large";
   customClass?: string;
-  colors?: Record<string, string>;
+  colors?: {
+    border?: string;
+    text?: string;
+    background?: string;
+    focus?: string;
+    label?: string;
+  };
 }
 
 export function PasswordInputField({
@@ -39,146 +43,144 @@ export function PasswordInputField({
   placeholder = '',
   required = false,
   helpText,
-  invalid = false,
-  errorMessage,
   className,
-  showToggle = true,
   floatLabel = false,
   filled = false,
-  textAlign = 'left',
-  labelPosition = 'top',
+  textAlign = "left",
+  labelPosition = "top",
   labelWidth = 30,
   showBorder = true,
-  roundedCorners = 'medium',
-  fieldSize = 'medium',
-  labelSize = 'medium',
-  customClass,
-  colors
+  roundedCorners = "medium",
+  fieldSize = "medium",
+  labelSize = "medium",
+  customClass = "",
+  colors = {}
 }: PasswordInputFieldProps) {
   const [showPassword, setShowPassword] = useState(false);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value);
-  };
+  const [hasFocus, setHasFocus] = useState(false);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
-  // Generate rounded corner classes based on the roundedCorners prop
-  const getRoundedClass = () => {
+  // Generate dynamic styles based on props
+  const inputContainerStyle: React.CSSProperties = {
+    display: labelPosition === "left" ? "flex" : "block",
+    alignItems: "center",
+    position: "relative"
+  };
+  
+  const labelStyle: React.CSSProperties = {
+    width: labelPosition === "left" ? `${labelWidth}%` : "auto",
+    fontSize: labelSize === "small" ? "0.875rem" : labelSize === "medium" ? "1rem" : "1.125rem",
+    fontWeight: labelSize === "large" ? 600 : 500,
+    color: colors.label || "#64748b",
+    marginBottom: labelPosition === "top" ? "0.5rem" : "0"
+  };
+  
+  // Get border radius based on roundedCorners prop
+  const getBorderRadius = () => {
     switch (roundedCorners) {
-      case 'none': return 'rounded-none';
-      case 'small': return 'rounded-sm';
-      case 'large': return 'rounded-lg';
-      default: return 'rounded-md';
+      case "none": return "0";
+      case "small": return "0.25rem";
+      case "medium": return "0.375rem";
+      case "large": return "0.5rem";
+      default: return "0.375rem";
     }
   };
-
-  // Generate size classes based on the fieldSize prop
-  const getSizeClass = () => {
+  
+  // Get padding based on fieldSize prop
+  const getPadding = () => {
     switch (fieldSize) {
-      case 'small': return 'h-8 text-xs px-2';
-      case 'large': return 'h-12 text-base px-4';
-      default: return 'h-10 text-sm px-3';
+      case "small": return "0.375rem 0.5rem";
+      case "medium": return "0.5rem 0.75rem";
+      case "large": return "0.75rem 1rem";
+      default: return "0.5rem 0.75rem";
     }
   };
-
-  // Generate label size classes based on the labelSize prop
-  const getLabelSizeClass = () => {
-    switch (labelSize) {
-      case 'small': return 'text-xs';
-      case 'large': return 'text-base';
-      default: return 'text-sm';
-    }
+  
+  const inputStyle: React.CSSProperties = {
+    width: labelPosition === "left" ? `${100 - labelWidth}%` : "100%",
+    backgroundColor: filled ? (colors.background || "#f1f5f9") : "transparent",
+    border: showBorder ? `1px solid ${colors.border || "#e2e8f0"}` : "none",
+    borderRadius: getBorderRadius(),
+    padding: getPadding(),
+    fontSize: fieldSize === "small" ? "0.875rem" : fieldSize === "medium" ? "1rem" : "1.125rem",
+    textAlign: textAlign,
+    color: colors.text || "#1e293b",
   };
-
-  const inputClassName = cn(
-    'flex-1 pr-10', // Add right padding for the eye button
-    getRoundedClass(),
-    getSizeClass(),
-    filled && 'bg-gray-100',
-    !showBorder && 'border-0',
-    invalid && 'border-red-500 focus-visible:ring-red-500',
-    customClass
-  );
 
   return (
-    <div className={cn(
-      'space-y-2',
-      labelPosition === 'left' && 'flex items-center gap-2',
-      labelPosition === 'right' && 'flex flex-row-reverse items-center gap-2',
-      className
-    )}>
-      {label && (
+    <div className={cn('relative space-y-1', className, customClass)} style={inputContainerStyle}>
+      {label && labelPosition === "top" && !floatLabel && (
         <Label 
           htmlFor={id}
-          className={cn(
-            getLabelSizeClass(),
-            labelPosition === 'left' && `w-${labelWidth}`,
-            labelPosition === 'right' && `w-${labelWidth}`,
-            floatLabel && value 
-              ? "absolute top-0 left-3 -translate-y-1/2 bg-background text-xs px-1 z-10" 
-              : ""
-          )}
+          style={labelStyle}
+          className={required ? "after:content-['*'] after:ml-1 after:text-red-500" : ""}
         >
-          {label}{required && <span className="text-red-500 ml-1">*</span>}
+          {label}
         </Label>
       )}
       
-      <div className={cn(
-        'relative',
-        labelPosition === 'left' && `w-[calc(100%-${labelWidth}%)]`,
-        labelPosition === 'right' && `w-[calc(100%-${labelWidth}%)]`
-      )}>
-        <Input
-          id={id}
-          type={showPassword ? 'text' : 'password'}
-          value={value}
-          onChange={handleInputChange}
-          placeholder={placeholder}
-          required={required}
-          className={inputClassName}
-          style={{
-            textAlign,
-            ...(colors && {
-              color: colors.textColor || 'inherit',
-              backgroundColor: colors.backgroundColor || (filled ? 'rgb(243 244 246)' : 'inherit'),
-              borderColor: invalid 
-                ? colors.errorBorderColor || 'rgb(239 68 68)'
-                : colors.borderColor || 'inherit'
-            })
-          }}
-          aria-describedby={helpText || errorMessage ? `${id}-description` : undefined}
-          aria-invalid={invalid}
-        />
-        
-        {showToggle && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-gray-500 hover:text-gray-700"
-            onClick={togglePasswordVisibility}
+      <div className="relative" style={labelPosition === "left" ? { width: `${100 - labelWidth}%` } : {}}>
+        {label && labelPosition === "left" && (
+          <Label 
+            htmlFor={id}
+            style={labelStyle}
+            className={required ? "after:content-['*'] after:ml-1 after:text-red-500" : ""}
           >
-            {showPassword ? (
-              <EyeOff size={16} />
-            ) : (
-              <Eye size={16} />
-            )}
-          </Button>
+            {label}
+          </Label>
         )}
-      </div>
-      
-      {(helpText || errorMessage) && (
-        <p 
-          id={`${id}-description`} 
+        
+        {floatLabel && label && (
+          <Label
+            htmlFor={id}
+            className={cn(
+              "absolute transition-all duration-200 pointer-events-none",
+              (hasFocus || value) ? "-top-3 left-2 bg-white px-1 text-xs" : `top-1/2 left-3 -translate-y-1/2`
+            )}
+            style={{
+              color: hasFocus ? (colors.focus || "#3b82f6") : (colors.label || "#64748b"),
+              zIndex: 10
+            }}
+          >
+            {label}{required && <span className="text-red-500 ml-1">*</span>}
+          </Label>
+        )}
+
+        <Input
+          type={showPassword ? 'text' : 'password'}
+          id={id}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={floatLabel && label ? "" : placeholder}
+          required={required}
           className={cn(
-            'text-xs',
-            invalid ? 'text-red-500' : 'text-muted-foreground'
+            "pr-10",
+            filled && "bg-gray-100",
+            floatLabel && "pt-4"
           )}
+          onFocus={() => setHasFocus(true)}
+          onBlur={() => setHasFocus(false)}
+          style={inputStyle}
+          aria-describedby={helpText ? `${id}-description` : undefined}
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="absolute right-0 top-0 h-full px-3 py-0 hover:bg-transparent"
+          onClick={togglePasswordVisibility}
+          tabIndex={-1}
+          aria-label={showPassword ? 'Hide password' : 'Show password'}
         >
-          {invalid ? errorMessage : helpText}
+          {showPassword ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
+        </Button>
+      </div>
+      {helpText && (
+        <p id={`${id}-description`} className="text-muted-foreground text-xs">
+          {helpText}
         </p>
       )}
     </div>

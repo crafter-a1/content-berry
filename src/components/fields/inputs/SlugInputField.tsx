@@ -14,10 +14,10 @@ interface SlugInputFieldProps {
   placeholder?: string;
   required?: boolean;
   helpText?: string;
+  className?: string;
   sourceValue?: string;
   prefix?: string;
   suffix?: string;
-  customClass?: string;
 }
 
 export function SlugInputField({
@@ -28,10 +28,10 @@ export function SlugInputField({
   placeholder = 'url-friendly-slug',
   required = false,
   helpText,
+  className,
   sourceValue = '',
   prefix = '',
-  suffix = '',
-  customClass
+  suffix = ''
 }: SlugInputFieldProps) {
   const [isEditing, setIsEditing] = useState(false);
   
@@ -61,7 +61,7 @@ export function SlugInputField({
   };
 
   return (
-    <div className={cn('space-y-2', customClass)}>
+    <div className={cn('space-y-2', className)}>
       {label && (
         <Label htmlFor={id}>
           {label}{required && <span className="text-red-500 ml-1">*</span>}

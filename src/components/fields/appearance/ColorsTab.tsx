@@ -1,152 +1,164 @@
 
-import React, { useState, useEffect } from 'react';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import React, { useState, useEffect } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { ColorPickerField } from "./ColorPickerField";
+import { toast } from "@/hooks/use-toast";
 
-interface ColorTabProps {
-  onUpdate: (colors: any) => void;
-  initialColors?: any;
+interface ColorsTabProps {
+  settings: any;
+  onUpdate: (settings: any) => void;
 }
 
-export function ColorsTab({ onUpdate, initialColors = {} }: ColorTabProps) {
+export function ColorsTab({ settings, onUpdate }: ColorsTabProps) {
+  const [activeColorTab, setActiveColorTab] = useState("border");
   const [colors, setColors] = useState({
-    textColor: initialColors?.textColor || '',
-    backgroundColor: initialColors?.backgroundColor || '',
-    borderColor: initialColors?.borderColor || '',
-    labelColor: initialColors?.labelColor || '',
-    helpTextColor: initialColors?.helpTextColor || '',
+    border: settings.colors?.border || "#e2e8f0",
+    text: settings.colors?.text || "#1e293b",
+    background: settings.colors?.background || "#ffffff",
+    focus: settings.colors?.focus || "#3b82f6",
+    label: settings.colors?.label || "#64748b"
   });
-
+  
+  // Update local state when settings change from parent
   useEffect(() => {
-    if (initialColors) {
+    if (settings.colors) {
       setColors({
-        textColor: initialColors.textColor || '',
-        backgroundColor: initialColors.backgroundColor || '',
-        borderColor: initialColors.borderColor || '',
-        labelColor: initialColors.labelColor || '',
-        helpTextColor: initialColors.helpTextColor || '',
+        border: settings.colors.border || "#e2e8f0",
+        text: settings.colors.text || "#1e293b",
+        background: settings.colors.background || "#ffffff",
+        focus: settings.colors.focus || "#3b82f6",
+        label: settings.colors.label || "#64748b"
       });
     }
-  }, [initialColors]);
-
-  const handleColorChange = (colorType: string, color: string) => {
-    const updatedColors = { ...colors, [colorType]: color };
-    setColors(updatedColors);
-    onUpdate(updatedColors);
+  }, [settings]);
+  
+  const handleColorChange = (type: string, value: string) => {
+    const newColors = {
+      ...colors,
+      [type]: value
+    };
+    
+    setColors(newColors);
+    
+    // Log the updated colors for debugging
+    console.log("Updated colors:", newColors);
+    
+    // Update the parent component with the new colors
+    onUpdate({
+      ...settings,
+      colors: newColors
+    });
+    
+    // Show a toast for better user feedback
+    toast({
+      title: "Color updated",
+      description: `${type.charAt(0).toUpperCase() + type.slice(1)} color has been updated`,
+      variant: "default"
+    });
   };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, colorType: string) => {
-    handleColorChange(colorType, e.target.value);
-  };
-
+  
   return (
-    <div className="py-4 space-y-6">
-      <h2 className="text-lg font-medium mb-4">Color Settings</h2>
-      <p className="text-sm text-muted-foreground mb-6">
-        Customize the colors of your field. Use hex color values or color names.
+    <div className="space-y-6">
+      <h3 className="text-lg font-medium">Colors</h3>
+      <p className="text-sm text-gray-500">
+        Customize the color scheme of your field
       </p>
-
-      <ColorPicker
-        label="Text Color"
-        description="Color of the input text"
-        value={colors.textColor}
-        onChange={(color) => handleColorChange('textColor', color)}
-        onInputChange={(e) => handleInputChange(e, 'textColor')}
-      />
       
-      <ColorPicker
-        label="Background Color"
-        description="Color of the field background"
-        value={colors.backgroundColor}
-        onChange={(color) => handleColorChange('backgroundColor', color)}
-        onInputChange={(e) => handleInputChange(e, 'backgroundColor')}
-      />
-      
-      <ColorPicker
-        label="Border Color"
-        description="Color of the field border"
-        value={colors.borderColor}
-        onChange={(color) => handleColorChange('borderColor', color)}
-        onInputChange={(e) => handleInputChange(e, 'borderColor')}
-      />
-      
-      <ColorPicker
-        label="Label Color"
-        description="Color of the field label"
-        value={colors.labelColor}
-        onChange={(color) => handleColorChange('labelColor', color)}
-        onInputChange={(e) => handleInputChange(e, 'labelColor')}
-      />
-      
-      <ColorPicker
-        label="Help Text Color"
-        description="Color of the help text"
-        value={colors.helpTextColor}
-        onChange={(color) => handleColorChange('helpTextColor', color)}
-        onInputChange={(e) => handleInputChange(e, 'helpTextColor')}
-      />
-    </div>
-  );
-}
-
-interface ColorPickerProps {
-  label: string;
-  description?: string;
-  value: string;
-  onChange: (color: string) => void;
-  onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}
-
-function ColorPicker({ label, description, value, onChange, onInputChange }: ColorPickerProps) {
-  return (
-    <div className="space-y-1.5">
-      <Label>{label}</Label>
-      {description && (
-        <p className="text-sm text-muted-foreground">{description}</p>
-      )}
-      <div className="flex items-center space-x-2">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              className="w-8 h-8 rounded-md border"
-              style={{ backgroundColor: value || 'transparent' }}
-            >
-              <span className="sr-only">Pick a color</span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <div className="p-3">
-              <input
-                type="color"
-                value={value || '#ffffff'}
-                onChange={(e) => onChange(e.target.value)}
-                className="w-32 h-32"
+      <Tabs value={activeColorTab} onValueChange={setActiveColorTab} className="mt-4">
+        <TabsList className="grid w-full grid-cols-5 mb-4">
+          <TabsTrigger value="border">Border</TabsTrigger>
+          <TabsTrigger value="text">Text</TabsTrigger>
+          <TabsTrigger value="background">Background</TabsTrigger>
+          <TabsTrigger value="focus">Focus</TabsTrigger>
+          <TabsTrigger value="label">Label</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="border">
+          <Card>
+            <CardContent className="pt-6">
+              <ColorPickerField
+                label="Border Color"
+                value={colors.border}
+                onChange={(value) => handleColorChange("border", value)}
+                presets={[
+                  "#e2e8f0", "#cbd5e1", "#94a3b8", "#64748b",
+                  "#3b82f6", "#a855f7", "#ec4899", "#ef4444",
+                  "#22c55e", "#eab308", "#f97316"
+                ]}
               />
-            </div>
-          </PopoverContent>
-        </Popover>
-        <Input
-          value={value || ''}
-          onChange={onInputChange}
-          placeholder="#000000 or color name"
-          className="max-w-xs"
-        />
-        {value && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onChange('')}
-          >
-            Clear
-          </Button>
-        )}
-      </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="text">
+          <Card>
+            <CardContent className="pt-6">
+              <ColorPickerField
+                label="Text Color"
+                value={colors.text}
+                onChange={(value) => handleColorChange("text", value)}
+                presets={[
+                  "#1e293b", "#334155", "#475569", "#64748b",
+                  "#000000", "#1e40af", "#6b21a8", "#881337",
+                  "#166534", "#854d0e", "#9a3412"
+                ]}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="background">
+          <Card>
+            <CardContent className="pt-6">
+              <ColorPickerField
+                label="Background Color"
+                value={colors.background}
+                onChange={(value) => handleColorChange("background", value)}
+                presets={[
+                  "#ffffff", "#f8fafc", "#f1f5f9", "#e2e8f0",
+                  "#dbeafe", "#ede9fe", "#fce7f3", "#fee2e2",
+                  "#dcfce7", "#fef9c3", "#ffedd5"
+                ]}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="focus">
+          <Card>
+            <CardContent className="pt-6">
+              <ColorPickerField
+                label="Focus State Color"
+                value={colors.focus}
+                onChange={(value) => handleColorChange("focus", value)}
+                presets={[
+                  "#3b82f6", "#2563eb", "#4f46e5", "#7c3aed", 
+                  "#8b5cf6", "#d946ef", "#ec4899", "#f43f5e",
+                  "#ef4444", "#f59e0b", "#10b981"
+                ]}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="label">
+          <Card>
+            <CardContent className="pt-6">
+              <ColorPickerField
+                label="Label Color"
+                value={colors.label}
+                onChange={(value) => handleColorChange("label", value)}
+                presets={[
+                  "#64748b", "#475569", "#334155", "#1e293b",
+                  "#3b82f6", "#8b5cf6", "#ec4899", "#f43f5e",
+                  "#10b981", "#eab308", "#f97316"
+                ]}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
-
-export default ColorsTab;

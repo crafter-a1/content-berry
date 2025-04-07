@@ -74,13 +74,15 @@ export default function Components() {
                           value={numberValue} 
                           onChange={setNumberValue}
                           label="US Format"
+                          locale="en-US"
                         />
                         <div className="mt-4">
                           <NumberInputField 
-                            id="german-number"
+                            id="de-number"
                             value={numberValue} 
                             onChange={setNumberValue}
                             label="German Format"
+                            locale="de-DE"
                           />
                         </div>
                       </div>
@@ -92,7 +94,8 @@ export default function Components() {
                           value={numberValue} 
                           onChange={setNumberValue}
                           label="USD Currency"
-                          prefix="$"
+                          locale="en-US"
+                          currency="USD"
                         />
                         <div className="mt-4">
                           <NumberInputField 
@@ -100,7 +103,8 @@ export default function Components() {
                             value={numberValue} 
                             onChange={setNumberValue}
                             label="EUR Currency"
-                            prefix="€"
+                            locale="de-DE"
+                            currency="EUR"
                           />
                         </div>
                       </div>
@@ -154,7 +158,7 @@ export default function Components() {
                       <div className="p-4 border rounded-md">
                         <h3 className="text-sm font-medium mb-3">7. Float Label & Filled Style</h3>
                         <NumberInputField 
-                          id="float-label-number"
+                          id="float-label"
                           value={numberValue} 
                           onChange={setNumberValue}
                           label="Float Label"
@@ -162,7 +166,7 @@ export default function Components() {
                         />
                         <div className="mt-4">
                           <NumberInputField 
-                            id="filled-number"
+                            id="filled-style"
                             value={numberValue} 
                             onChange={setNumberValue}
                             label="Filled Style"
@@ -174,7 +178,7 @@ export default function Components() {
                       <div className="p-4 border rounded-md">
                         <h3 className="text-sm font-medium mb-3">8. States</h3>
                         <NumberInputField 
-                          id="invalid-number"
+                          id="invalid-state"
                           value={numberValue} 
                           onChange={setNumberValue}
                           label="Invalid State"
@@ -182,7 +186,7 @@ export default function Components() {
                         />
                         <div className="mt-4">
                           <NumberInputField 
-                            id="disabled-number"
+                            id="disabled-state"
                             value={numberValue} 
                             onChange={setNumberValue}
                             label="Disabled State"

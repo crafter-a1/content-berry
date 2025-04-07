@@ -17,8 +17,8 @@ interface BlockEditorFieldProps {
   placeholder?: string;
   required?: boolean;
   helpText?: string;
+  className?: string;
   minHeight?: string;
-  customClass?: string;
 }
 
 export function BlockEditorField({
@@ -29,8 +29,8 @@ export function BlockEditorField({
   placeholder = 'Enter content...',
   required = false,
   helpText,
-  minHeight = '200px',
-  customClass
+  className,
+  minHeight = '200px'
 }: BlockEditorFieldProps) {
   // For a real implementation, you'd use a rich text editor library
   // This is a simplified version to demonstrate the UI
@@ -46,7 +46,7 @@ export function BlockEditorField({
   };
 
   return (
-    <div className={cn('space-y-2', customClass)}>
+    <div className={cn('space-y-2', className)}>
       {label && (
         <Label htmlFor={id}>
           {label}{required && <span className="text-red-500 ml-1">*</span>}
