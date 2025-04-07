@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CollectionService, ValidationSettings } from '@/services/CollectionService';
+import { CollectionService, ValidationSettings, CollectionField } from '@/services/CollectionService';
 import { FieldConfigPanel } from '@/components/fields/FieldConfigPanel';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink } from '@/components/ui/breadcrumb';
@@ -133,6 +133,23 @@ const flatFieldTypes = Object.entries(fieldTypes).flatMap(([category, types]) =>
   types.map(type => ({ ...type, group: category }))
 );
 
+type Field = {
+  id: string;
+  name: string;
+  apiId: string;
+  type: string;
+  description?: string;
+  required: boolean;
+  settings?: Record<string, any>;
+  sort_order?: number;
+  collection_id?: string;
+  validation?: ValidationSettings;
+  appearance?: Record<string, any>;
+  advanced?: Record<string, any>;
+  helpText?: string;
+  ui_options?: Record<string, any>;
+};
+
 export default function FieldConfiguration() {
   const { collectionId } = useParams<{ collectionId: string }>();
   const navigate = useNavigate();
@@ -163,12 +180,17 @@ export default function FieldConfiguration() {
     }
   }, [activeCategory]);
   
-  const { data: fields = [], isLoading, error } = useQuery({
+  const { data: collectionFields = [], isLoading, error } = useQuery({
     queryKey: ['fields', collectionId],
     queryFn: () => CollectionService.getFieldsForCollection(collectionId!),
     enabled: !!collectionId
   });
-  
+
+  const fields: Field[] = collectionFields.map(field => ({
+    ...field,
+    required: field.required || false,
+  }));
+
   const createFieldMutation = useMutation({
     mutationFn: (fieldData: any) => CollectionService.createField(collectionId!, fieldData),
     onSuccess: () => {

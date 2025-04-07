@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 
@@ -26,12 +25,10 @@ export interface Collection {
   fields?: any[];
   createdAt: string;
   updatedAt: string;
-  // Add the missing fields
   icon?: string;
   iconColor?: string;
   items?: number;
   lastUpdated?: string;
-  // Legacy field names
   created_at?: string;
   updated_at?: string;
 }
@@ -50,14 +47,17 @@ export interface CollectionField {
   apiId: string;
   type: string;
   description?: string;
-  required?: boolean;
+  required: boolean;
   settings?: Record<string, any>;
   sort_order?: number;
   collection_id?: string;
   validation?: ValidationSettings;
+  appearance?: Record<string, any>;
+  advanced?: Record<string, any>;
+  helpText?: string;
+  ui_options?: Record<string, any>;
 }
 
-// Helper function to convert Supabase collection to our Collection interface
 const mapSupabaseCollection = (collection: Database['public']['Tables']['collections']['Row']): Collection => {
   return {
     id: collection.id,
@@ -69,17 +69,16 @@ const mapSupabaseCollection = (collection: Database['public']['Tables']['collect
     updatedAt: collection.updated_at,
     icon: collection.icon || 'file',
     iconColor: collection.icon_color || 'gray',
-    // These will be populated separately
     items: 0,
     lastUpdated: collection.updated_at,
-    // Legacy field names
     created_at: collection.created_at,
     updated_at: collection.updated_at
   };
 };
 
-// Helper function to convert Supabase field to our CollectionField interface
 const mapSupabaseField = (field: Database['public']['Tables']['fields']['Row']): CollectionField => {
+  const settings = field.settings as Record<string, any> || {};
+  
   return {
     id: field.id,
     name: field.name,
@@ -87,10 +86,14 @@ const mapSupabaseField = (field: Database['public']['Tables']['fields']['Row']):
     type: field.type,
     description: field.description || undefined,
     required: field.required || false,
-    settings: field.settings as Record<string, any> || {},
+    settings: settings,
     sort_order: field.sort_order || 0,
     collection_id: field.collection_id || undefined,
-    validation: (field.settings as any)?.validation || {},
+    validation: settings.validation || {},
+    appearance: settings.appearance || {},
+    advanced: settings.advanced || {},
+    helpText: settings.helpText || '',
+    ui_options: settings.ui_options || {}
   };
 };
 
@@ -117,17 +120,20 @@ export const CollectionService = {
   
   createField: async (collectionId: string, fieldData: Partial<CollectionField>): Promise<CollectionField> => {
     try {
-      // Ensure field has required properties
+      const { validation, appearance, advanced, apiId, ...restData } = fieldData;
+      
       const field = {
         name: fieldData.name || 'New Field',
-        api_id: fieldData.apiId || fieldData.name?.toLowerCase().replace(/\s+/g, '_') || 'new_field',
+        api_id: apiId || fieldData.name?.toLowerCase().replace(/\s+/g, '_') || 'new_field',
         type: fieldData.type || 'text',
         collection_id: collectionId,
         description: fieldData.description || null,
         required: fieldData.required || false,
         settings: {
-          ...fieldData.settings || {},
-          validation: fieldData.validation || {}
+          ...restData.settings || {},
+          validation: validation || {},
+          appearance: appearance || {},
+          advanced: advanced || {}
         },
         sort_order: fieldData.sort_order || 0,
       };
@@ -146,18 +152,22 @@ export const CollectionService = {
       return mapSupabaseField(data);
     } catch (error) {
       console.error('Failed to create field:', error);
-      // Fallback to mock response if Supabase fails
       return { 
         id: `mock-${Date.now()}`, 
-        ...fieldData as CollectionField,
-        collection_id: collectionId
+        name: fieldData.name || 'New Field',
+        apiId: fieldData.apiId || 'new_field',
+        type: fieldData.type || 'text',
+        required: fieldData.required || false,
+        collection_id: collectionId,
+        validation: fieldData.validation || {},
+        appearance: fieldData.appearance || {},
+        advanced: fieldData.advanced || {}
       };
     }
   },
   
   updateField: async (collectionId: string, fieldId: string, fieldData: Partial<CollectionField>): Promise<CollectionField> => {
     try {
-      // Prepare field data for update
       const updateData: any = {};
       
       if (fieldData.name) updateData.name = fieldData.name;
@@ -167,26 +177,44 @@ export const CollectionService = {
       if (fieldData.required !== undefined) updateData.required = fieldData.required;
       if (fieldData.sort_order !== undefined) updateData.sort_order = fieldData.sort_order;
       
-      // Handle settings and validation separately to merge with existing settings
-      if (fieldData.settings || fieldData.validation) {
-        // First get current field to merge settings
-        const { data: currentField } = await supabase
-          .from('fields')
-          .select('settings')
-          .eq('id', fieldId)
-          .single();
+      const settingsToUpdate: Record<string, any> = {};
+      
+      const { data: currentField } = await supabase
+        .from('fields')
+        .select('settings')
+        .eq('id', fieldId)
+        .single();
           
-        const currentSettings = currentField?.settings || {};
-        
-        updateData.settings = {
-          ...currentSettings,
-          ...fieldData.settings || {},
-          validation: {
-            ...(currentSettings as any)?.validation || {},
-            ...(fieldData.validation || {})
-          }
+      const currentSettings = currentField?.settings || {};
+      
+      if (fieldData.settings) {
+        Object.assign(settingsToUpdate, currentSettings, fieldData.settings);
+      } else {
+        Object.assign(settingsToUpdate, currentSettings);
+      }
+      
+      if (fieldData.validation) {
+        settingsToUpdate.validation = {
+          ...(currentSettings.validation || {}),
+          ...fieldData.validation
         };
       }
+      
+      if (fieldData.appearance) {
+        settingsToUpdate.appearance = {
+          ...(currentSettings.appearance || {}),
+          ...fieldData.appearance
+        };
+      }
+      
+      if (fieldData.advanced) {
+        settingsToUpdate.advanced = {
+          ...(currentSettings.advanced || {}),
+          ...fieldData.advanced
+        };
+      }
+      
+      updateData.settings = settingsToUpdate;
       
       const { data, error } = await supabase
         .from('fields')
@@ -203,11 +231,16 @@ export const CollectionService = {
       return mapSupabaseField(data);
     } catch (error) {
       console.error('Failed to update field:', error);
-      // Return existing field data with updates as fallback
       return { 
         id: fieldId, 
-        ...fieldData as CollectionField,
-        collection_id: collectionId
+        name: fieldData.name || 'Unknown Field',
+        apiId: fieldData.apiId || 'unknown_field',
+        type: fieldData.type || 'text',
+        required: fieldData.required !== undefined ? fieldData.required : true,
+        collection_id: collectionId,
+        validation: fieldData.validation || {},
+        appearance: fieldData.appearance || {},
+        advanced: fieldData.advanced || {}
       };
     }
   },
@@ -230,7 +263,7 @@ export const CollectionService = {
       return { success: false };
     }
   },
-
+  
   fetchCollections: async (): Promise<Collection[]> => {
     try {
       const { data: collections, error } = await supabase
@@ -243,13 +276,10 @@ export const CollectionService = {
         throw error;
       }
       
-      // Map Supabase collections to our Collection interface
       const mappedCollections = collections.map(mapSupabaseCollection);
       
-      // For each collection, count its fields and content items
       for (const collection of mappedCollections) {
         try {
-          // Count fields
           const { count: fieldCount, error: fieldsError } = await supabase
             .from('fields')
             .select('*', { count: 'exact', head: true })
@@ -259,7 +289,6 @@ export const CollectionService = {
             collection.fields = new Array(fieldCount || 0);
           }
           
-          // Count content items
           const { count: itemCount, error: itemsError } = await supabase
             .from('content_items')
             .select('*', { count: 'exact', head: true })
@@ -277,7 +306,6 @@ export const CollectionService = {
     } catch (error) {
       console.error('Failed to fetch collections:', error);
       
-      // Return mock data as fallback
       return [
         {
           id: 'col1',
@@ -314,7 +342,7 @@ export const CollectionService = {
       ];
     }
   },
-
+  
   createCollection: async (collectionData: CollectionFormData): Promise<Collection> => {
     try {
       const newCollection = {
@@ -322,8 +350,8 @@ export const CollectionService = {
         api_id: collectionData.apiId,
         description: collectionData.description || null,
         status: collectionData.status || 'draft',
-        icon: 'file', // Default icon
-        icon_color: 'gray', // Default color
+        icon: 'file',
+        icon_color: 'gray',
       };
       
       const { data, error } = await supabase
@@ -341,7 +369,6 @@ export const CollectionService = {
     } catch (error) {
       console.error('Failed to create collection:', error);
       
-      // Return mock data as fallback
       return {
         id: `col-${Date.now()}`,
         title: collectionData.name,
@@ -360,7 +387,7 @@ export const CollectionService = {
       };
     }
   },
-
+  
   getContentItems: async (collectionId: string): Promise<any[]> => {
     try {
       const { data: contentItems, error } = await supabase
@@ -378,7 +405,6 @@ export const CollectionService = {
     } catch (error) {
       console.error('Failed to fetch content items:', error);
       
-      // Return mock data as fallback
       return [
         {
           id: `item-${Date.now()}-1`,
@@ -401,7 +427,6 @@ export const CollectionService = {
   }
 };
 
-// Export individual functions for direct imports
 export const {
   getFieldsForCollection,
   createField,

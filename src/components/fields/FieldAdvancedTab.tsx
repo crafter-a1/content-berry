@@ -11,7 +11,9 @@ interface FieldAdvancedTabProps {
 }
 
 export function FieldAdvancedTab({ fieldType, fieldData, onUpdate }: FieldAdvancedTabProps) {
-  const [advancedSettings, setAdvancedSettings] = useState<any>(fieldData?.advanced || {});
+  const [advancedSettings, setAdvancedSettings] = useState<any>(
+    fieldData?.advanced || (fieldData?.settings?.advanced || {})
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -19,6 +21,8 @@ export function FieldAdvancedTab({ fieldType, fieldData, onUpdate }: FieldAdvanc
   useEffect(() => {
     if (fieldData?.advanced) {
       setAdvancedSettings(fieldData.advanced);
+    } else if (fieldData?.settings?.advanced) {
+      setAdvancedSettings(fieldData.settings.advanced);
     } else {
       setAdvancedSettings({});
     }
