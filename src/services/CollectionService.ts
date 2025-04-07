@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 
@@ -131,7 +130,7 @@ export const CollectionService = {
       
       // Get the highest sort_order or use 0 if no fields exist
       const highestSortOrder = existingFields && existingFields.length > 0 
-        ? (existingFields[0].sort_order || 0) 
+        ? (existingFields[0].sort_order || 0) + 1 
         : 0;
       
       const { validation, appearance, advanced, apiId, ui_options, helpText, ...restData } = fieldData;
@@ -160,17 +159,19 @@ export const CollectionService = {
       
       if (ui_options) {
         settings.ui_options = ui_options;
+      } else if (fieldData.ui_options) {
+        settings.ui_options = fieldData.ui_options;
       }
       
       const field = {
         name: fieldData.name || 'New Field',
-        api_id: apiId || fieldData.name?.toLowerCase().replace(/\s+/g, '_') || 'new_field',
+        api_id: apiId || fieldData.apiId || fieldData.name?.toLowerCase().replace(/\s+/g, '_') || 'new_field',
         type: fieldData.type || 'text',
         collection_id: collectionId,
         description: fieldData.description || null,
         required: fieldData.required || false,
         settings: settings,
-        sort_order: highestSortOrder + 1, // Place the new field at the bottom
+        sort_order: highestSortOrder, // Place the new field at the bottom
       };
       
       const { data, error } = await supabase
@@ -187,20 +188,7 @@ export const CollectionService = {
       return mapSupabaseField(data);
     } catch (error) {
       console.error('Failed to create field:', error);
-      return { 
-        id: `mock-${Date.now()}`, 
-        name: fieldData.name || 'New Field',
-        apiId: fieldData.apiId || 'new_field',
-        type: fieldData.type || 'text',
-        required: fieldData.required || false,
-        collection_id: collectionId,
-        validation: fieldData.validation || {},
-        appearance: fieldData.appearance || {},
-        advanced: fieldData.advanced || {},
-        ui_options: fieldData.ui_options || {},
-        helpText: fieldData.helpText || '',
-        sort_order: 999 // High number as fallback
-      };
+      throw error;
     }
   },
   
@@ -278,19 +266,7 @@ export const CollectionService = {
       return mapSupabaseField(data);
     } catch (error) {
       console.error('Failed to update field:', error);
-      return { 
-        id: fieldId, 
-        name: fieldData.name || 'Unknown Field',
-        apiId: fieldData.apiId || 'unknown_field',
-        type: fieldData.type || 'text',
-        required: fieldData.required !== undefined ? fieldData.required : true,
-        collection_id: collectionId,
-        validation: fieldData.validation || {},
-        appearance: fieldData.appearance || {},
-        advanced: fieldData.advanced || {},
-        ui_options: fieldData.ui_options || {},
-        helpText: fieldData.helpText || ''
-      };
+      throw error;
     }
   },
   

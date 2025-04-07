@@ -2,7 +2,7 @@
 import { cn } from "@/lib/utils";
 import { Trash2, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { updateFieldOrder } from "@/services/CollectionService";
 
 interface Field {
@@ -27,9 +27,9 @@ export function FieldList({ fields, onSelectField, onDeleteField, selectedFieldI
   const [orderedFields, setOrderedFields] = useState<Field[]>(fields);
   
   // Update the local state when fields prop changes
-  useState(() => {
+  useEffect(() => {
     setOrderedFields(fields);
-  });
+  }, [fields]);
   
   if (fields.length === 0) {
     return (
@@ -94,6 +94,12 @@ export function FieldList({ fields, onSelectField, onDeleteField, selectedFieldI
     setDraggingField(null);
   };
 
+  const handleDeleteField = (fieldId: string) => {
+    if (onDeleteField) {
+      onDeleteField(fieldId);
+    }
+  };
+
   return (
     <div className="space-y-2">
       {orderedFields.map((field) => (
@@ -134,9 +140,7 @@ export function FieldList({ fields, onSelectField, onDeleteField, selectedFieldI
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (window.confirm(`Are you sure you want to delete "${field.name}" field?`)) {
-                    onDeleteField(field.id);
-                  }
+                  handleDeleteField(field.id);
                 }}
                 className="text-red-500 hover:text-red-700 hover:bg-red-50"
               >
