@@ -10,6 +10,7 @@ export interface ValidationSettings {
   url?: boolean;
   unique?: boolean;
   message?: string;
+  maxTags?: number;
   [key: string]: any;
 }
 
