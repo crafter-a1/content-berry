@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 
@@ -120,7 +121,46 @@ export const CollectionService = {
   
   createField: async (collectionId: string, fieldData: Partial<CollectionField>): Promise<CollectionField> => {
     try {
-      const { validation, appearance, advanced, apiId, ...restData } = fieldData;
+      // First get the highest sort_order to add the new field at the bottom
+      const { data: existingFields, error: countError } = await supabase
+        .from('fields')
+        .select('sort_order')
+        .eq('collection_id', collectionId)
+        .order('sort_order', { ascending: false })
+        .limit(1);
+      
+      // Get the highest sort_order or use 0 if no fields exist
+      const highestSortOrder = existingFields && existingFields.length > 0 
+        ? (existingFields[0].sort_order || 0) 
+        : 0;
+      
+      const { validation, appearance, advanced, apiId, ui_options, helpText, ...restData } = fieldData;
+      
+      // Prepare the settings object
+      const settings: Record<string, any> = {
+        ...(fieldData.settings || {}),
+      };
+      
+      // Add validation, appearance, and advanced settings to the settings object
+      if (validation) {
+        settings.validation = validation;
+      }
+      
+      if (appearance) {
+        settings.appearance = appearance;
+      }
+      
+      if (advanced) {
+        settings.advanced = advanced;
+      }
+      
+      if (helpText) {
+        settings.helpText = helpText;
+      }
+      
+      if (ui_options) {
+        settings.ui_options = ui_options;
+      }
       
       const field = {
         name: fieldData.name || 'New Field',
@@ -129,13 +169,8 @@ export const CollectionService = {
         collection_id: collectionId,
         description: fieldData.description || null,
         required: fieldData.required || false,
-        settings: {
-          ...restData.settings || {},
-          validation: validation || {},
-          appearance: appearance || {},
-          advanced: advanced || {}
-        },
-        sort_order: fieldData.sort_order || 0,
+        settings: settings,
+        sort_order: highestSortOrder + 1, // Place the new field at the bottom
       };
       
       const { data, error } = await supabase
@@ -161,7 +196,10 @@ export const CollectionService = {
         collection_id: collectionId,
         validation: fieldData.validation || {},
         appearance: fieldData.appearance || {},
-        advanced: fieldData.advanced || {}
+        advanced: fieldData.advanced || {},
+        ui_options: fieldData.ui_options || {},
+        helpText: fieldData.helpText || '',
+        sort_order: 999 // High number as fallback
       };
     }
   },
@@ -177,22 +215,29 @@ export const CollectionService = {
       if (fieldData.required !== undefined) updateData.required = fieldData.required;
       if (fieldData.sort_order !== undefined) updateData.sort_order = fieldData.sort_order;
       
-      const settingsToUpdate: Record<string, any> = {};
-      
       const { data: currentField } = await supabase
         .from('fields')
         .select('settings')
         .eq('id', fieldId)
         .single();
           
-      const currentSettings = currentField?.settings || {};
+      const currentSettings = (currentField?.settings as Record<string, any>) || {};
+      const settingsToUpdate: Record<string, any> = { ...currentSettings };
       
-      if (fieldData.settings) {
-        Object.assign(settingsToUpdate, currentSettings, fieldData.settings);
-      } else {
-        Object.assign(settingsToUpdate, currentSettings);
+      // Update UI options if provided
+      if (fieldData.ui_options) {
+        settingsToUpdate.ui_options = {
+          ...(currentSettings.ui_options || {}),
+          ...fieldData.ui_options
+        };
       }
       
+      // Update help text if provided
+      if (fieldData.helpText !== undefined) {
+        settingsToUpdate.helpText = fieldData.helpText;
+      }
+      
+      // Update validation settings if provided
       if (fieldData.validation) {
         settingsToUpdate.validation = {
           ...(currentSettings.validation || {}),
@@ -200,6 +245,7 @@ export const CollectionService = {
         };
       }
       
+      // Update appearance settings if provided
       if (fieldData.appearance) {
         settingsToUpdate.appearance = {
           ...(currentSettings.appearance || {}),
@@ -207,6 +253,7 @@ export const CollectionService = {
         };
       }
       
+      // Update advanced settings if provided
       if (fieldData.advanced) {
         settingsToUpdate.advanced = {
           ...(currentSettings.advanced || {}),
@@ -240,7 +287,9 @@ export const CollectionService = {
         collection_id: collectionId,
         validation: fieldData.validation || {},
         appearance: fieldData.appearance || {},
-        advanced: fieldData.advanced || {}
+        advanced: fieldData.advanced || {},
+        ui_options: fieldData.ui_options || {},
+        helpText: fieldData.helpText || ''
       };
     }
   },
@@ -261,6 +310,29 @@ export const CollectionService = {
     } catch (error) {
       console.error('Failed to delete field:', error);
       return { success: false };
+    }
+  },
+
+  updateFieldOrder: async (collectionId: string, fieldOrders: { id: string, sort_order: number }[]): Promise<boolean> => {
+    try {
+      // Update each field's sort_order in sequence
+      for (const field of fieldOrders) {
+        const { error } = await supabase
+          .from('fields')
+          .update({ sort_order: field.sort_order })
+          .eq('id', field.id)
+          .eq('collection_id', collectionId);
+        
+        if (error) {
+          console.error(`Error updating field order for ${field.id}:`, error);
+          throw error;
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to update field order:', error);
+      return false;
     }
   },
   
@@ -432,6 +504,7 @@ export const {
   createField,
   updateField,
   deleteField,
+  updateFieldOrder,
   fetchCollections,
   createCollection,
   getContentItems

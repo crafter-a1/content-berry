@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -49,6 +50,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { JSONEditorField } from '@/components/fields/inputs/JSONEditorField';
 import { ComponentSelector } from '@/components/fields/ComponentSelector';
+
+// Define the Field type that will be used in this component
+interface Field extends CollectionField {
+  required: boolean; // Make required non-optional to satisfy the Field type
+}
 
 const fieldTypes = {
   'Text & Numbers': [
@@ -133,23 +139,6 @@ const flatFieldTypes = Object.entries(fieldTypes).flatMap(([category, types]) =>
   types.map(type => ({ ...type, group: category }))
 );
 
-type Field = {
-  id: string;
-  name: string;
-  apiId: string;
-  type: string;
-  description?: string;
-  required: boolean;
-  settings?: Record<string, any>;
-  sort_order?: number;
-  collection_id?: string;
-  validation?: ValidationSettings;
-  appearance?: Record<string, any>;
-  advanced?: Record<string, any>;
-  helpText?: string;
-  ui_options?: Record<string, any>;
-};
-
 export default function FieldConfiguration() {
   const { collectionId } = useParams<{ collectionId: string }>();
   const navigate = useNavigate();
@@ -186,6 +175,7 @@ export default function FieldConfiguration() {
     enabled: !!collectionId
   });
 
+  // Convert CollectionField[] to Field[] ensuring required is set
   const fields: Field[] = collectionFields.map(field => ({
     ...field,
     required: field.required || false,
@@ -282,6 +272,12 @@ export default function FieldConfiguration() {
       setAdvancedSettings(selectedField.advanced);
     } else {
       setAdvancedSettings({});
+    }
+    
+    if (selectedField && selectedField.appearance) {
+      setAppearanceSettings(selectedField.appearance);
+    } else {
+      setAppearanceSettings({});
     }
   };
   
@@ -696,7 +692,184 @@ export default function FieldConfiguration() {
           </TabsList>
           
           <TabsContent value="fields">
-            {renderTabContent()}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <Card className="col-span-1">
+                <CardHeader>
+                  <CardTitle className="text-lg flex justify-between items-center">
+                    Fields
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => setComponentSelectorOpen(true)}
+                        className="h-8 gap-1"
+                      >
+                        <FileType className="h-4 w-4" />
+                        Add Component
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => {
+                          setSelectedFieldId(null);
+                          setSelectedFieldType(null);
+                        }}
+                        className="h-8 gap-1"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Field
+                      </Button>
+                    </div>
+                  </CardTitle>
+                  <CardDescription>
+                    All fields defined for this collection
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoading ? (
+                    <p className="text-center py-4 text-gray-500">Loading fields...</p>
+                  ) : error ? (
+                    <p className="text-center py-4 text-red-500">Error loading fields</p>
+                  ) : (
+                    <FieldList 
+                      fields={fields} 
+                      onSelectField={selectField}
+                      onDeleteField={handleDeleteField}
+                      selectedFieldId={selectedFieldId}
+                      collectionId={collectionId}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+              
+              <Card className="col-span-1 lg:col-span-2">
+                {!selectedFieldType && !selectedFieldId ? (
+                  <>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Field Types</CardTitle>
+                      <CardDescription>
+                        Select a field type to add to your collection
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="mb-6">
+                        <Tabs value={activeCategory || Object.keys(fieldTypes)[0]} onValueChange={setActiveCategory}>
+                          <TabsList className="mb-4 flex flex-wrap h-auto">
+                            {Object.keys(fieldTypes).map((category) => (
+                              <TabsTrigger key={category} value={category} className="h-9">
+                                {category}
+                              </TabsTrigger>
+                            ))}
+                          </TabsList>
+                          
+                          {Object.entries(fieldTypes).map(([category, types]) => (
+                            <TabsContent key={category} value={category}>
+                              <FieldTypeSelector 
+                                fieldTypes={types} 
+                                onSelectFieldType={selectFieldType} 
+                              />
+                            </TabsContent>
+                          ))}
+                        </Tabs>
+                      </div>
+                    </CardContent>
+                  </>
+                ) : (
+                  <>
+                    <CardHeader className="flex flex-row items-start justify-between">
+                      <div>
+                        <CardTitle className="text-lg">
+                          {selectedFieldId ? 'Edit Field' : 'New Field'}
+                        </CardTitle>
+                        <CardDescription>
+                          {selectedFieldId 
+                            ? 'Modify the field properties' 
+                            : `Configure your new ${flatFieldTypes.find(t => t.id === selectedFieldType)?.name} field`
+                          }
+                        </CardDescription>
+                      </div>
+                      {selectedFieldId && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => {
+                            if (window.confirm("Are you sure you want to delete this field?")) {
+                              handleDeleteField(selectedFieldId);
+                            }
+                          }}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Field
+                        </Button>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      <FieldConfigPanel
+                        fieldType={selectedFieldType || (selectedFieldId ? fields.find(f => f.id === selectedFieldId)?.type : null)}
+                        fieldData={selectedFieldId ? fields.find(f => f.id === selectedFieldId) : undefined}
+                        onSave={handleSaveField}
+                        onCancel={() => {
+                          setSelectedFieldId(null);
+                          setSelectedFieldType(null);
+                        }}
+                        onUpdateAdvanced={handleUpdateAdvancedSettings}
+                      />
+                    </CardContent>
+                  </>
+                )}
+              </Card>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="validation">
+            <Card>
+              <CardContent className="pt-6">
+                {selectedFieldId ? (
+                  <FieldValidationPanel 
+                    fieldType={fields.find(f => f.id === selectedFieldId)?.type || null} 
+                    initialData={fields.find(f => f.id === selectedFieldId)?.validation || {}}
+                    onUpdate={handleUpdateValidationSettings}
+                  />
+                ) : (
+                  <div className="text-center py-10">
+                    <h3 className="text-xl font-semibold mb-2">No Field Selected</h3>
+                    <p className="text-gray-500 mb-6">Please select a field from the list to configure its validation rules</p>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setActiveTab('fields')}
+                    >
+                      Back to Fields
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="advanced">
+            <Card>
+              <CardContent className="pt-6">
+                {selectedFieldId ? (
+                  <FieldAdvancedPanel 
+                    fieldType={fields.find(f => f.id === selectedFieldId)?.type || null} 
+                    initialData={fields.find(f => f.id === selectedFieldId)?.advanced || {}}
+                    onSave={handleUpdateAdvancedSettings}
+                  />
+                ) : (
+                  <div className="text-center py-10">
+                    <h3 className="text-xl font-semibold mb-2">No Field Selected</h3>
+                    <p className="text-gray-500 mb-6">Please select a field from the list to configure its advanced settings</p>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setActiveTab('fields')}
+                    >
+                      Back to Fields
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 
