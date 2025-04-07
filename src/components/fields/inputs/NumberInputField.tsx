@@ -113,6 +113,18 @@ export const NumberInputField = ({
     }
   };
 
+  // Define the inputStyle variable that was missing
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    padding: getPadding(),
+    borderRadius: getBorderRadius(),
+    textAlign: textAlign,
+    borderColor: invalid ? "#ef4444" : colors.border || "#e2e8f0",
+    color: colors.text || "#1e293b",
+    backgroundColor: filled ? (colors.background || "#f8fafc") : "#ffffff",
+    borderWidth: showBorder ? "1px" : "0",
+  };
+
   const formatValue = (value: number): string => {
     if (locale) {
       try {
