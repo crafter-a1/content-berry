@@ -33,23 +33,25 @@ export function FieldAdvancedTab({ fieldType, fieldData, onUpdate }: FieldAdvanc
     setIsSaving(true);
     
     try {
+      // Log the advanced settings being saved
+      console.log("[FieldAdvancedTab] Saving advanced settings:", JSON.stringify(advancedSettings, null, 2));
+      
       setAdvancedSettings(advancedSettings);
       
-      // Merge with existing field data if needed
-      const updatedData = {
-        ...(fieldData || {}),
-        advanced: advancedSettings
-      };
+      // Create a deep copy of the existing field data to work with
+      const updatedData = fieldData ? JSON.parse(JSON.stringify(fieldData)) : {};
       
-      // Ensure we don't lose appearance settings if they exist
-      if (fieldData?.appearance) {
-        updatedData.appearance = fieldData.appearance;
+      // Set the advanced settings
+      if (!updatedData.settings) {
+        updatedData.settings = {};
       }
       
-      // Log what we're saving to debug any issues
-      console.log("Saving advanced settings:", advancedSettings);
-      console.log("Updated field data:", updatedData);
+      updatedData.settings.advanced = advancedSettings;
       
+      // Log the complete updated field data
+      console.log("[FieldAdvancedTab] Complete updated field data:", JSON.stringify(updatedData, null, 2));
+      
+      // Update the field data with our deep-copied and merged object
       onUpdate(updatedData);
       
       toast({
@@ -57,7 +59,7 @@ export function FieldAdvancedTab({ fieldType, fieldData, onUpdate }: FieldAdvanc
         description: "Your field's advanced settings have been saved"
       });
     } catch (error) {
-      console.error("Error saving advanced settings:", error);
+      console.error("[FieldAdvancedTab] Error saving advanced settings:", error);
       toast({
         title: "Error saving settings",
         description: "There was a problem saving your advanced settings",
