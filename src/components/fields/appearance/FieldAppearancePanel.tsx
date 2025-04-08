@@ -9,17 +9,22 @@ import { CustomCSSTab } from "./CustomCSSTab";
 import { FieldPreview } from "./FieldPreview";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { SaveIcon } from "lucide-react";
+import { SaveIcon, Loader2 } from "lucide-react";
 import { validateUIVariant, normalizeAppearanceSettings } from "@/utils/inputAdapters";
+import { updateField } from "@/services/CollectionService";
 
 interface FieldAppearancePanelProps {
   fieldType: string | null;
+  fieldId?: string;
+  collectionId?: string;
   initialData?: any;
   onSave: (data: any) => void;
 }
 
 export function FieldAppearancePanel({
   fieldType,
+  fieldId,
+  collectionId,
   initialData = {},
   onSave
 }: FieldAppearancePanelProps) {
@@ -27,6 +32,7 @@ export function FieldAppearancePanel({
   const [previewState, setPreviewState] = useState<'default' | 'hover' | 'focus' | 'disabled' | 'error'>('default');
   const [isDarkMode, setIsDarkMode] = useState(initialData?.isDarkMode || false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingToDb, setIsSavingToDb] = useState(false);
 
   // Ensure we get a valid UI variant from initialData or use 'standard' as default
   const defaultUIVariant = validateUIVariant(initialData?.uiVariant);
@@ -69,37 +75,93 @@ export function FieldAppearancePanel({
       console.log("UI Variant updated to:", updatedSettings.uiVariant);
     }
     
-    // Save immediately to ensure changes are persisted
-    saveAllSettings(updatedSettings);
+    // Save immediately to ensure changes are persisted locally
+    saveLocalSettings(updatedSettings);
   };
 
-  // Save all settings to parent component
-  const saveAllSettings = (settingsToSave = settings) => {
+  // Save settings to parent component only (local state)
+  const saveLocalSettings = (settingsToSave = settings) => {
     setIsSaving(true);
 
     try {
       // Ensure settings are properly normalized before saving
       const normalizedSettings = normalizeAppearanceSettings(settingsToSave);
       
-      console.log("Saving appearance settings:", normalizedSettings);
-      console.log("UI Variant being saved:", normalizedSettings.uiVariant);
+      console.log("Saving appearance settings locally:", normalizedSettings);
+      console.log("UI Variant being saved locally:", normalizedSettings.uiVariant);
 
       // Save settings to parent component
       onSave(normalizedSettings);
 
       toast({
-        title: "Appearance settings saved",
-        description: "Your changes have been saved successfully"
+        title: "Appearance settings saved locally",
+        description: "Your changes have been saved to local state"
       });
     } catch (error) {
-      console.error("Error saving appearance settings:", error);
+      console.error("Error saving appearance settings locally:", error);
       toast({
-        title: "Error saving settings",
-        description: "There was a problem saving your appearance settings",
+        title: "Error saving settings locally",
+        description: "There was a problem saving your appearance settings to local state",
         variant: "destructive"
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Save all settings to database
+  const saveToDatabaseSettings = async () => {
+    // Check if we have the required IDs to save to database
+    if (!fieldId || !collectionId) {
+      toast({
+        title: "Missing field or collection ID",
+        description: "Cannot save to database without field and collection IDs",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSavingToDb(true);
+
+    try {
+      // Normalize settings before saving
+      const normalizedSettings = normalizeAppearanceSettings(settings);
+      
+      console.log("Saving appearance settings to database:", normalizedSettings);
+      console.log("Field ID:", fieldId);
+      console.log("Collection ID:", collectionId);
+
+      // Prepare field update data
+      const fieldData = {
+        settings: {
+          appearance: normalizedSettings
+        }
+      };
+
+      // Call the updateField service function directly
+      const updatedField = await updateField(collectionId, fieldId, fieldData);
+      
+      console.log("Field updated in database:", updatedField);
+
+      toast({
+        title: "Appearance settings saved to database",
+        description: "Your changes have been saved successfully to the database"
+      });
+
+      // Update local state with the latest data from the database
+      if (updatedField?.settings?.appearance) {
+        const dbSettings = normalizeAppearanceSettings(updatedField.settings.appearance);
+        setSettings(dbSettings);
+      }
+    } catch (error) {
+      console.error("Error saving appearance settings to database:", error);
+      toast({
+        title: "Error saving settings to database",
+        description: "There was a problem saving your appearance settings to the database",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSavingToDb(false);
     }
   };
 
@@ -161,14 +223,38 @@ export function FieldAppearancePanel({
         </TabsContent>
       </Tabs>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
         <Button
-          onClick={() => saveAllSettings()}
+          onClick={saveLocalSettings}
           disabled={isSaving}
+          variant="outline"
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            "Save Local Only"
+          )}
+        </Button>
+        
+        <Button
+          onClick={saveToDatabaseSettings}
+          disabled={isSavingToDb || !fieldId || !collectionId}
           className="bg-blue-600 hover:bg-blue-700"
         >
-          <SaveIcon className="mr-2 h-4 w-4" />
-          {isSaving ? "Saving..." : "Save All Appearance Settings"}
+          {isSavingToDb ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving to Database...
+            </>
+          ) : (
+            <>
+              <SaveIcon className="mr-2 h-4 w-4" />
+              Save to Database
+            </>
+          )}
         </Button>
       </div>
     </div>

@@ -49,8 +49,17 @@ export function WysiwygEditorField({
     invalid && 'has-error'
   );
 
+  // Generate custom style based on colors if provided
+  const customStyle: React.CSSProperties = {};
+  if (colors) {
+    if (colors.border) customStyle.borderColor = colors.border;
+    if (colors.text) customStyle.color = colors.text;
+    if (colors.background) customStyle.backgroundColor = colors.background;
+    // Focus is handled via CSS classes, but we could add more styling here
+  }
+
   return (
-    <div className={fieldClassName} data-ui-variant={validUIVariant}>
+    <div className={fieldClassName} data-ui-variant={validUIVariant} style={customStyle}>
       <BlockEditorField
         id={id}
         label={label}
