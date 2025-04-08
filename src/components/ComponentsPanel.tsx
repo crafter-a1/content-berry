@@ -20,7 +20,11 @@ interface Component {
 
 // Define interface for ComponentsPanel props
 interface ComponentsPanelProps {
-  collections?: any[]; // Make collections optional to support both use cases
+  collections?: any[];
+  // Add missing props that are being passed to the component
+  onCreateField?: (collectionId: string, fieldData: any) => Promise<any>;
+  onUpdateField?: (collectionId: string, fieldId: string, fieldData: any) => Promise<any>;
+  isUpdating?: boolean;
 }
 
 // Mock components data
@@ -59,7 +63,12 @@ const mockComponents = [
   }
 ];
 
-export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({ collections }) => {
+export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({ 
+  collections,
+  onCreateField,
+  onUpdateField,
+  isUpdating 
+}) => {
   const navigate = useNavigate();
   const [components] = useState(mockComponents);
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,6 +88,11 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({ collections })
   // If collections are provided, we could use them here
   // This is just to show we're handling the collections prop
   console.log("Collections received:", collections);
+  
+  // If onCreateField is provided, we could use it here when creating a component
+  console.log("onCreateField provided:", !!onCreateField);
+  console.log("onUpdateField provided:", !!onUpdateField);
+  console.log("isUpdating status:", isUpdating);
   
   return (
     <div className="space-y-6">
@@ -198,8 +212,16 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({ collections })
         onSave={(data) => {
           console.log("Component created:", data);
           setDrawerOpen(false);
+          
+          // If onCreateField is provided, use it to create a field for this component
+          if (onCreateField && collections && collections.length > 0) {
+            // This is just an example of how you might use onCreateField
+            // You'd need to adapt this based on the actual structure of your data
+            const defaultCollectionId = collections[0].id;
+            console.log("Could create field in collection:", defaultCollectionId);
+          }
         }}
       />
     </div>
   );
-};
+}
