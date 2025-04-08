@@ -43,6 +43,13 @@ export function DebugFieldConfigPanel({
     
     setFieldConfig(updatedFieldConfig);
     
+    // Perform a deep inspection of the data before saving
+    console.log(`Debug - Saving field data:`, JSON.stringify(updatedFieldConfig, null, 2));
+    
+    if (updatedFieldConfig.validation) {
+      console.log(`Debug - Validation settings being saved:`, JSON.stringify(updatedFieldConfig.validation, null, 2));
+    }
+    
     // Attempt to save to database
     try {
       let response;
@@ -58,6 +65,9 @@ export function DebugFieldConfigPanel({
       }
       
       setApiResponse(response);
+      
+      // Inspect the response for debugging
+      console.log(`Debug - API response:`, JSON.stringify(response, null, 2));
       
       toast({
         title: fieldData?.id ? "Field updated" : "Field created",

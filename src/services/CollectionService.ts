@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { normalizeAppearanceSettings, validateUIVariant } from '@/utils/inputAdapters';
@@ -144,26 +143,49 @@ const mapSupabaseField = (field: Database['public']['Tables']['fields']['Row']):
   };
 };
 
-// Helper function for deep merging of objects
+// Enhanced deep merge function with better handling of arrays and null values
 const deepMerge = (target: any, source: any): any => {
-  if (!source) return target;
-  if (!target) return { ...source };
+  // Return source if target is null/undefined or not an object
+  if (target === null || target === undefined || typeof target !== 'object') {
+    return source === undefined ? target : source;
+  }
   
+  // Return target if source is null/undefined
+  if (source === null || source === undefined) {
+    return target;
+  }
+  
+  // Handle arrays: replace entire array unless explicitly stated to merge
+  if (Array.isArray(target) && Array.isArray(source)) {
+    return source; // Replace arrays by default
+  }
+  
+  // Both are objects, create a new object for the result
   const output = { ...target };
   
-  if (isObject(target) && isObject(source)) {
-    Object.keys(source).forEach(key => {
-      if (isObject(source[key])) {
-        if (!(key in target)) {
-          Object.assign(output, { [key]: source[key] });
-        } else {
-          output[key] = deepMerge(target[key], source[key]);
-        }
-      } else {
-        Object.assign(output, { [key]: source[key] });
-      }
-    });
-  }
+  // Iterate through source properties
+  Object.keys(source).forEach(key => {
+    // Skip undefined values to prevent overwriting with undefined
+    if (source[key] === undefined) {
+      return;
+    }
+    
+    // If property exists in target and both values are objects, merge recursively
+    if (
+      key in target && 
+      source[key] !== null && 
+      target[key] !== null && 
+      typeof source[key] === 'object' && 
+      typeof target[key] === 'object' &&
+      !Array.isArray(source[key]) && 
+      !Array.isArray(target[key])
+    ) {
+      output[key] = deepMerge(target[key], source[key]);
+    } else {
+      // Otherwise use source value (for primitive values, arrays, or when target doesn't have the property)
+      output[key] = source[key];
+    }
+  });
   
   return output;
 };
@@ -311,6 +333,7 @@ export const CollectionService = {
   updateField: async (collectionId: string, fieldId: string, fieldData: Partial<CollectionField>): Promise<CollectionField> => {
     try {
       debugLog(`Updating field ${fieldId} in collection ${collectionId}:`, fieldData);
+      debugLog(`Original field data:`, JSON.stringify(fieldData, null, 2));
       
       const updateData: any = {};
 
@@ -322,10 +345,10 @@ export const CollectionService = {
       if (fieldData.required !== undefined) updateData.required = fieldData.required;
       if (fieldData.sort_order !== undefined) updateData.sort_order = fieldData.sort_order;
 
-      // Get current field data to properly merge with updates
+      // Get current field data to properly merge with updates - CRITICAL STEP
       const { data: currentField, error: getCurrentError } = await supabase
         .from('fields')
-        .select('settings')
+        .select('*')  // Select all columns to get complete field data
         .eq('id', fieldId)
         .single();
 
@@ -334,48 +357,75 @@ export const CollectionService = {
         throw getCurrentError;
       }
 
-      // Create a deep copy of the current settings
-      const currentSettings = (currentField?.settings as Record<string, any>) || {};
+      debugLog(`Current field data from database:`, JSON.stringify(currentField, null, 2));
       
-      // Log current settings for debugging
-      debugLog('[updateField] Current settings before merging:', JSON.stringify(currentSettings, null, 2));
-      debugLog('[updateField] New data to merge:', JSON.stringify(fieldData, null, 2));
+      // Create a deep copy of the current settings to avoid reference issues
+      const currentSettings = currentField?.settings ? JSON.parse(JSON.stringify(currentField.settings)) : {};
+      
+      debugLog('[updateField] Current settings from database:', JSON.stringify(currentSettings, null, 2));
+      debugLog('[updateField] New field data to merge:', JSON.stringify(fieldData, null, 2));
       
       // Initialize settings to update with deep copy of current settings
       let settingsToUpdate: Record<string, any> = JSON.parse(JSON.stringify(currentSettings));
-
-      // Check if direct settings object is provided
-      if (fieldData.settings) {
-        debugLog('[updateField] Merging provided settings object:', JSON.stringify(fieldData.settings, null, 2));
-        settingsToUpdate = deepMerge(settingsToUpdate, fieldData.settings);
+      
+      // IMPROVED VALIDATION SETTINGS HANDLING
+      if (fieldData.validation) {
+        debugLog('[updateField] Found validation at root level:', JSON.stringify(fieldData.validation, null, 2));
+        
+        // Create validation object if it doesn't exist
+        if (!settingsToUpdate.validation) {
+          settingsToUpdate.validation = {};
+        }
+        
+        // Deep merge validation settings
+        settingsToUpdate.validation = deepMerge(settingsToUpdate.validation, fieldData.validation);
+        
+        debugLog('[updateField] Merged validation settings:', JSON.stringify(settingsToUpdate.validation, null, 2));
       }
-
-      // Handle UI options
+      
+      // Handle other direct properties in fieldData.settings
+      if (fieldData.settings) {
+        debugLog('[updateField] Merging settings object:', JSON.stringify(fieldData.settings, null, 2));
+        
+        // For each property in fieldData.settings, merge it with settingsToUpdate
+        Object.keys(fieldData.settings).forEach(key => {
+          // Skip undefined values
+          if (fieldData.settings![key] === undefined) return;
+          
+          // Handle special case for validation to ensure we don't double-process
+          if (key === 'validation' && fieldData.validation) {
+            return; // Already processed above
+          }
+          
+          // Deep merge or assign depending on if both are objects
+          if (isObject(fieldData.settings![key]) && isObject(settingsToUpdate[key])) {
+            settingsToUpdate[key] = deepMerge(settingsToUpdate[key] || {}, fieldData.settings![key]);
+          } else {
+            settingsToUpdate[key] = fieldData.settings![key];
+          }
+        });
+      }
+      
+      // Process UI options (from either location)
       if (fieldData.settings?.ui_options || fieldData.ui_options) {
         const newUiOptions = fieldData.settings?.ui_options || fieldData.ui_options || {};
         settingsToUpdate.ui_options = deepMerge(settingsToUpdate.ui_options || {}, newUiOptions);
+        debugLog('[updateField] Merged UI options:', JSON.stringify(settingsToUpdate.ui_options, null, 2));
       }
-
+      
       // Handle help text
       if (fieldData.settings?.helpText !== undefined || fieldData.helpText !== undefined) {
         settingsToUpdate.helpText = fieldData.settings?.helpText ?? fieldData.helpText;
       }
-
-      // Handle validation settings with deep merge
-      if (fieldData.settings?.validation || fieldData.validation) {
-        const newValidation = fieldData.settings?.validation || fieldData.validation || {};
-        settingsToUpdate.validation = deepMerge(settingsToUpdate.validation || {}, newValidation);
-      }
-
-      // Handle appearance settings with deep merge
+      
+      // Handle appearance settings (from either location)
       if (fieldData.settings?.appearance || fieldData.appearance) {
         const newAppearance = fieldData.settings?.appearance || fieldData.appearance || {};
         
-        // Log the appearance settings we're about to merge
         debugLog('[updateField] Current appearance:', JSON.stringify(settingsToUpdate.appearance || {}, null, 2));
         debugLog('[updateField] New appearance to merge:', JSON.stringify(newAppearance, null, 2));
         
-        // Use deep merge to preserve all existing values not explicitly overwritten
+        // Deep merge appearance settings
         settingsToUpdate.appearance = deepMerge(settingsToUpdate.appearance || {}, newAppearance);
         
         // Ensure UI variant is properly set
@@ -383,21 +433,28 @@ export const CollectionService = {
           settingsToUpdate.appearance.uiVariant = validateUIVariant(newAppearance.uiVariant);
         }
         
-        // Log the final merged appearance settings
         debugLog('[updateField] Merged appearance result:', JSON.stringify(settingsToUpdate.appearance, null, 2));
       }
-
-      // Handle advanced settings with deep merge
+      
+      // Handle advanced settings
       if (fieldData.settings?.advanced || fieldData.advanced) {
         const newAdvanced = fieldData.settings?.advanced || fieldData.advanced || {};
         settingsToUpdate.advanced = deepMerge(settingsToUpdate.advanced || {}, newAdvanced);
+        debugLog('[updateField] Merged advanced settings:', JSON.stringify(settingsToUpdate.advanced, null, 2));
       }
-
-      // Set the updated settings
+      
+      // Set the final updated settings
       updateData.settings = settingsToUpdate;
       
       // Log the final settings structure being saved
       debugLog('[updateField] Final settings structure being saved:', JSON.stringify(updateData.settings, null, 2));
+      
+      // Compare before and after for debugging
+      const settingsDiff = {
+        before: currentSettings,
+        after: updateData.settings,
+      };
+      debugLog('[updateField] Settings difference:', JSON.stringify(settingsDiff, null, 2));
 
       // Update the field in the database
       const { data, error } = await supabase

@@ -1,6 +1,8 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
 
 interface FieldDebuggerProps {
   fieldData: any;
@@ -9,6 +11,31 @@ interface FieldDebuggerProps {
 }
 
 export function FieldDebugger({ fieldData, apiResponse, isLoading = false }: FieldDebuggerProps) {
+  const [showDiff, setShowDiff] = useState(false);
+  
+  const getObjectDifferences = (before: any, after: any) => {
+    if (!before || !after) return {};
+    
+    const differences: any = {};
+    
+    // Get all keys from both objects
+    const allKeys = [...new Set([...Object.keys(before), ...Object.keys(after)])];
+    
+    for (const key of allKeys) {
+      if (JSON.stringify(before[key]) !== JSON.stringify(after[key])) {
+        differences[key] = {
+          before: before[key],
+          after: after[key]
+        };
+      }
+    }
+    
+    return differences;
+  };
+  
+  const differences = apiResponse ? getObjectDifferences(fieldData, apiResponse) : {};
+  const hasDifferences = Object.keys(differences).length > 0;
+
   return (
     <Card className="my-4">
       <CardHeader>
@@ -22,6 +49,24 @@ export function FieldDebugger({ fieldData, apiResponse, isLoading = false }: Fie
             <pre className="bg-gray-50 p-3 rounded-md text-xs overflow-auto max-h-40">
               {JSON.stringify(fieldData, null, 2)}
             </pre>
+            
+            {fieldData?.validation && (
+              <div className="mt-2">
+                <h4 className="text-sm font-medium mb-1">Validation Settings</h4>
+                <pre className="bg-blue-50 p-3 rounded-md text-xs overflow-auto max-h-40">
+                  {JSON.stringify(fieldData.validation, null, 2)}
+                </pre>
+              </div>
+            )}
+            
+            {fieldData?.settings?.validation && (
+              <div className="mt-2">
+                <h4 className="text-sm font-medium mb-1">Settings.Validation</h4>
+                <pre className="bg-green-50 p-3 rounded-md text-xs overflow-auto max-h-40">
+                  {JSON.stringify(fieldData.settings.validation, null, 2)}
+                </pre>
+              </div>
+            )}
           </div>
 
           <div>
@@ -33,6 +78,37 @@ export function FieldDebugger({ fieldData, apiResponse, isLoading = false }: Fie
                 ? 'Waiting for response...'
                 : 'No response yet'}
             </pre>
+            
+            {apiResponse?.settings?.validation && (
+              <div className="mt-2">
+                <h4 className="text-sm font-medium mb-1">Response Validation Settings</h4>
+                <pre className="bg-purple-50 p-3 rounded-md text-xs overflow-auto max-h-40">
+                  {JSON.stringify(apiResponse.settings.validation, null, 2)}
+                </pre>
+              </div>
+            )}
+            
+            {hasDifferences && (
+              <div className="mt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowDiff(!showDiff)}
+                  className="mb-2"
+                >
+                  {showDiff ? 'Hide' : 'Show'} Differences
+                </Button>
+                
+                {showDiff && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-1">Data Differences</h4>
+                    <pre className="bg-yellow-50 p-3 rounded-md text-xs overflow-auto max-h-40">
+                      {JSON.stringify(differences, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div>
@@ -43,7 +119,30 @@ export function FieldDebugger({ fieldData, apiResponse, isLoading = false }: Fie
               <li>Verify API ID is unique within the collection</li>
               <li>Ensure Supabase connection is working properly</li>
               <li>Check browser console for any JavaScript errors</li>
+              <li>Make sure validation settings are in the correct format</li>
+              <li>Verify that settings are being properly merged, not overwritten</li>
             </ul>
+            
+            <div className="mt-3">
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => {
+                  const debugInfo = {
+                    fieldData,
+                    apiResponse,
+                    differences: hasDifferences ? differences : 'No differences detected'
+                  };
+                  console.log('Field Debug Information:', debugInfo);
+                  toast({
+                    title: "Debug info logged",
+                    description: "Check browser console for detailed debug information",
+                  });
+                }}
+              >
+                Log Detailed Debug Info
+              </Button>
+            </div>
           </div>
         </div>
       </CardContent>
