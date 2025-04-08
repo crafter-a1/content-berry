@@ -1,6 +1,8 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { normalizeAppearanceSettings, validateUIVariant } from '@/utils/inputAdapters';
+import { toast } from '@/hooks/use-toast';
 
 export interface ValidationSettings {
   required?: boolean;
@@ -171,8 +173,19 @@ const isObject = (item: any): boolean => {
   return (item && typeof item === 'object' && !Array.isArray(item));
 };
 
+// Enable debug mode for development
+const DEBUG_ENABLED = true;
+
+// Debug function to log detailed information when enabled
+const debugLog = (message: string, data?: any) => {
+  if (DEBUG_ENABLED) {
+    console.log(`[CollectionService] ${message}`, data ? data : '');
+  }
+};
+
 export const CollectionService = {
   getFieldsForCollection: async (collectionId: string): Promise<CollectionField[]> => {
+    debugLog(`Fetching fields for collection: ${collectionId}`);
     try {
       const { data: fields, error } = await supabase
         .from('fields')
@@ -185,6 +198,7 @@ export const CollectionService = {
         throw error;
       }
 
+      debugLog(`Successfully fetched ${fields.length} fields`);
       return fields.map(mapSupabaseField);
     } catch (error) {
       console.error('Failed to fetch fields:', error);
@@ -194,6 +208,8 @@ export const CollectionService = {
 
   createField: async (collectionId: string, fieldData: Partial<CollectionField>): Promise<CollectionField> => {
     try {
+      debugLog(`Creating new field in collection ${collectionId}:`, fieldData);
+      
       // First get the highest sort_order to add the new field at the bottom
       const { data: existingFields, error: countError } = await supabase
         .from('fields')
@@ -202,10 +218,16 @@ export const CollectionService = {
         .order('sort_order', { ascending: false })
         .limit(1);
 
+      if (countError) {
+        console.error('Error getting existing fields:', countError);
+      }
+
       // Get the highest sort_order or use 0 if no fields exist
       const highestSortOrder = existingFields && existingFields.length > 0
         ? (existingFields[0].sort_order || 0) + 1
         : 0;
+
+      debugLog(`Highest sort order is: ${highestSortOrder}`);
 
       const { apiId, ...restData } = fieldData;
 
@@ -249,6 +271,8 @@ export const CollectionService = {
         sort_order: highestSortOrder, // Place the new field at the bottom
       };
 
+      debugLog('Inserting field into database:', field);
+
       const { data, error } = await supabase
         .from('fields')
         .insert([field])
@@ -257,18 +281,37 @@ export const CollectionService = {
 
       if (error) {
         console.error('Error creating field:', error);
+        toast({
+          title: "Error creating field",
+          description: `Database error: ${error.message}`,
+          variant: "destructive"
+        });
         throw error;
       }
 
+      debugLog('Field created successfully:', data);
+      
+      toast({
+        title: "Field created",
+        description: `The field "${field.name}" was successfully created`,
+      });
+      
       return mapSupabaseField(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create field:', error);
+      toast({
+        title: "Field creation failed",
+        description: error.message || "An unknown error occurred",
+        variant: "destructive"
+      });
       throw error;
     }
   },
 
   updateField: async (collectionId: string, fieldId: string, fieldData: Partial<CollectionField>): Promise<CollectionField> => {
     try {
+      debugLog(`Updating field ${fieldId} in collection ${collectionId}:`, fieldData);
+      
       const updateData: any = {};
 
       // Map basic field properties
@@ -295,15 +338,15 @@ export const CollectionService = {
       const currentSettings = (currentField?.settings as Record<string, any>) || {};
       
       // Log current settings for debugging
-      console.log('[updateField] Current settings before merging:', JSON.stringify(currentSettings, null, 2));
-      console.log('[updateField] New data to merge:', JSON.stringify(fieldData, null, 2));
+      debugLog('[updateField] Current settings before merging:', JSON.stringify(currentSettings, null, 2));
+      debugLog('[updateField] New data to merge:', JSON.stringify(fieldData, null, 2));
       
       // Initialize settings to update with deep copy of current settings
       let settingsToUpdate: Record<string, any> = JSON.parse(JSON.stringify(currentSettings));
 
       // Check if direct settings object is provided
       if (fieldData.settings) {
-        console.log('[updateField] Merging provided settings object:', JSON.stringify(fieldData.settings, null, 2));
+        debugLog('[updateField] Merging provided settings object:', JSON.stringify(fieldData.settings, null, 2));
         settingsToUpdate = deepMerge(settingsToUpdate, fieldData.settings);
       }
 
@@ -329,8 +372,8 @@ export const CollectionService = {
         const newAppearance = fieldData.settings?.appearance || fieldData.appearance || {};
         
         // Log the appearance settings we're about to merge
-        console.log('[updateField] Current appearance:', JSON.stringify(settingsToUpdate.appearance || {}, null, 2));
-        console.log('[updateField] New appearance to merge:', JSON.stringify(newAppearance, null, 2));
+        debugLog('[updateField] Current appearance:', JSON.stringify(settingsToUpdate.appearance || {}, null, 2));
+        debugLog('[updateField] New appearance to merge:', JSON.stringify(newAppearance, null, 2));
         
         // Use deep merge to preserve all existing values not explicitly overwritten
         settingsToUpdate.appearance = deepMerge(settingsToUpdate.appearance || {}, newAppearance);
@@ -341,7 +384,7 @@ export const CollectionService = {
         }
         
         // Log the final merged appearance settings
-        console.log('[updateField] Merged appearance result:', JSON.stringify(settingsToUpdate.appearance, null, 2));
+        debugLog('[updateField] Merged appearance result:', JSON.stringify(settingsToUpdate.appearance, null, 2));
       }
 
       // Handle advanced settings with deep merge
@@ -354,7 +397,7 @@ export const CollectionService = {
       updateData.settings = settingsToUpdate;
       
       // Log the final settings structure being saved
-      console.log('[updateField] Final settings structure being saved:', JSON.stringify(updateData.settings, null, 2));
+      debugLog('[updateField] Final settings structure being saved:', JSON.stringify(updateData.settings, null, 2));
 
       // Update the field in the database
       const { data, error } = await supabase
@@ -366,6 +409,11 @@ export const CollectionService = {
 
       if (error) {
         console.error('Error updating field:', error);
+        toast({
+          title: "Error updating field",
+          description: `Database error: ${error.message}`,
+          variant: "destructive"
+        });
         throw error;
       }
 
@@ -373,16 +421,27 @@ export const CollectionService = {
       const mappedField = mapSupabaseField(data);
       
       // Log the mapped field for debugging
-      console.log('[updateField] Updated field after mapping:', JSON.stringify(mappedField, null, 2));
+      debugLog('[updateField] Updated field after mapping:', JSON.stringify(mappedField, null, 2));
+      
+      toast({
+        title: "Field updated",
+        description: `The field "${mappedField.name}" was successfully updated`,
+      });
       
       return mappedField;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update field:', error);
+      toast({
+        title: "Field update failed",
+        description: error.message || "An unknown error occurred",
+        variant: "destructive"
+      });
       throw error;
     }
   },
 
   deleteField: async (collectionId: string, fieldId: string): Promise<{ success: boolean }> => {
+    debugLog(`Deleting field ${fieldId} from collection ${collectionId}`);
     try {
       const { error } = await supabase
         .from('fields')
@@ -391,12 +450,27 @@ export const CollectionService = {
 
       if (error) {
         console.error('Error deleting field:', error);
+        toast({
+          title: "Error deleting field",
+          description: `Database error: ${error.message}`,
+          variant: "destructive"
+        });
         throw error;
       }
 
+      toast({
+        title: "Field deleted",
+        description: "The field was successfully deleted",
+      });
+
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete field:', error);
+      toast({
+        title: "Field deletion failed",
+        description: error.message || "An unknown error occurred",
+        variant: "destructive"
+      });
       return { success: false };
     }
   },
