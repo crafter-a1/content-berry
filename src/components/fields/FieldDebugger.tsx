@@ -12,6 +12,7 @@ interface FieldDebuggerProps {
 
 export function FieldDebugger({ fieldData, apiResponse, isLoading = false }: FieldDebuggerProps) {
   const [showDiff, setShowDiff] = useState(false);
+  const [showValidationDetails, setShowValidationDetails] = useState(false);
   
   const getObjectDifferences = (before: any, after: any) => {
     if (!before || !after) return {};
@@ -22,7 +23,19 @@ export function FieldDebugger({ fieldData, apiResponse, isLoading = false }: Fie
     const allKeys = [...new Set([...Object.keys(before), ...Object.keys(after)])];
     
     for (const key of allKeys) {
-      if (JSON.stringify(before[key]) !== JSON.stringify(after[key])) {
+      // Deep comparison for nested objects
+      if (
+        typeof before[key] === 'object' && before[key] !== null &&
+        typeof after[key] === 'object' && after[key] !== null &&
+        !Array.isArray(before[key]) && !Array.isArray(after[key])
+      ) {
+        const nestedDiff = getObjectDifferences(before[key], after[key]);
+        if (Object.keys(nestedDiff).length > 0) {
+          differences[key] = nestedDiff;
+        }
+      } 
+      // Simple comparison for non-objects or arrays
+      else if (JSON.stringify(before[key]) !== JSON.stringify(after[key])) {
         differences[key] = {
           before: before[key],
           after: after[key]
@@ -35,6 +48,10 @@ export function FieldDebugger({ fieldData, apiResponse, isLoading = false }: Fie
   
   const differences = apiResponse ? getObjectDifferences(fieldData, apiResponse) : {};
   const hasDifferences = Object.keys(differences).length > 0;
+
+  // Extract validation data
+  const originalValidation = fieldData?.validation || fieldData?.settings?.validation || {};
+  const responseValidation = apiResponse?.validation || apiResponse?.settings?.validation || {};
 
   return (
     <Card className="my-4">
@@ -50,14 +67,34 @@ export function FieldDebugger({ fieldData, apiResponse, isLoading = false }: Fie
               {JSON.stringify(fieldData, null, 2)}
             </pre>
             
-            {fieldData?.validation && (
-              <div className="mt-2">
-                <h4 className="text-sm font-medium mb-1">Validation Settings</h4>
-                <pre className="bg-blue-50 p-3 rounded-md text-xs overflow-auto max-h-40">
-                  {JSON.stringify(fieldData.validation, null, 2)}
-                </pre>
-              </div>
-            )}
+            <div className="mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowValidationDetails(!showValidationDetails)}
+                className="mb-2"
+              >
+                {showValidationDetails ? 'Hide' : 'Show'} Validation Details
+              </Button>
+              
+              {showValidationDetails && (
+                <>
+                  <h4 className="text-sm font-medium mb-1">Validation Settings</h4>
+                  <pre className="bg-blue-50 p-3 rounded-md text-xs overflow-auto max-h-40">
+                    {JSON.stringify(originalValidation, null, 2)}
+                  </pre>
+                  
+                  <div className="mt-2">
+                    <h4 className="text-sm font-medium mb-1">Validation Path in Data</h4>
+                    <ul className="list-disc list-inside text-sm">
+                      {fieldData?.validation ? <li>Direct: fieldData.validation</li> : null}
+                      {fieldData?.settings?.validation ? <li>Nested: fieldData.settings.validation</li> : null}
+                      {!fieldData?.validation && !fieldData?.settings?.validation ? <li>No validation data found</li> : null}
+                    </ul>
+                  </div>
+                </>
+              )}
+            </div>
             
             {fieldData?.settings?.validation && (
               <div className="mt-2">
@@ -131,7 +168,11 @@ export function FieldDebugger({ fieldData, apiResponse, isLoading = false }: Fie
                   const debugInfo = {
                     fieldData,
                     apiResponse,
-                    differences: hasDifferences ? differences : 'No differences detected'
+                    differences: hasDifferences ? differences : 'No differences detected',
+                    validationComparison: {
+                      original: originalValidation,
+                      response: responseValidation
+                    }
                   };
                   console.log('Field Debug Information:', debugInfo);
                   toast({

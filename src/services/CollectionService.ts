@@ -392,13 +392,21 @@ export const CollectionService = {
           // Skip undefined values
           if (fieldData.settings![key] === undefined) return;
           
-          // Handle special case for validation to ensure we don't double-process
-          if (key === 'validation' && fieldData.validation) {
-            return; // Already processed above
+          // Special handling for validation to ensure proper deep merging
+          if (key === 'validation') {
+            debugLog('[updateField] Found validation in settings:', JSON.stringify(fieldData.settings!.validation, null, 2));
+            
+            // Ensure validation object exists
+            if (!settingsToUpdate.validation) {
+              settingsToUpdate.validation = {};
+            }
+            
+            // Deep merge validation settings
+            settingsToUpdate.validation = deepMerge(settingsToUpdate.validation, fieldData.settings!.validation);
+            debugLog('[updateField] Merged validation in settings:', JSON.stringify(settingsToUpdate.validation, null, 2));
           }
-          
           // Deep merge or assign depending on if both are objects
-          if (isObject(fieldData.settings![key]) && isObject(settingsToUpdate[key])) {
+          else if (isObject(fieldData.settings![key]) && isObject(settingsToUpdate[key])) {
             settingsToUpdate[key] = deepMerge(settingsToUpdate[key] || {}, fieldData.settings![key]);
           } else {
             settingsToUpdate[key] = fieldData.settings![key];
