@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -51,8 +50,8 @@ export function DebugFieldConfigPanel({
     // Prepare data for saving - restructure to use the proper database columns
     const fieldDataForSave = {
       ...updatedFieldConfig,
-      // For new database schema, put validation data in validation_settings column
-      validation_settings: updatedFieldConfig.validation || {},
+      // Move validation data to validation_settings column
+      validation_settings: updatedFieldConfig.validation || {}
     };
     
     // Remove validation from settings object if it exists to avoid duplication

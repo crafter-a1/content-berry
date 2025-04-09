@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { normalizeAppearanceSettings, validateUIVariant } from '@/utils/inputAdapters';
@@ -83,9 +84,13 @@ export interface CollectionField {
     [key: string]: any;
   };
   validation?: ValidationSettings;
+  validation_settings?: ValidationSettings;
   appearance?: AppearanceSettings;
+  appearance_settings?: AppearanceSettings;
   advanced?: Record<string, any>;
+  advanced_settings?: Record<string, any>;
   ui_options?: Record<string, any>;
+  ui_options_settings?: Record<string, any>;
   helpText?: string;
   sort_order?: number;
   collection_id?: string;
