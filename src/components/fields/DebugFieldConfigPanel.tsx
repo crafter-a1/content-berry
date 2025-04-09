@@ -48,8 +48,21 @@ export function DebugFieldConfigPanel({
       console.log(`Debug - Validation settings:`, JSON.stringify(updatedFieldConfig.validation, null, 2));
     }
     
+    // Prepare data for saving - restructure to use the proper database columns
+    const fieldDataForSave = {
+      ...updatedFieldConfig,
+      // For new database schema, put validation data in validation_settings column
+      validation_settings: updatedFieldConfig.validation || {},
+    };
+    
+    // Remove validation from settings object if it exists to avoid duplication
+    if (fieldDataForSave.settings?.validation) {
+      delete fieldDataForSave.settings.validation;
+      console.log(`Debug - Removed validation from settings to prevent duplication`);
+    }
+    
     // Perform a deep inspection of the complete data before saving
-    console.log(`Debug - Saving field data:`, JSON.stringify(updatedFieldConfig, null, 2));
+    console.log(`Debug - Saving field data:`, JSON.stringify(fieldDataForSave, null, 2));
     
     // Attempt to save to database
     try {
@@ -57,12 +70,12 @@ export function DebugFieldConfigPanel({
       
       if (fieldData?.id) {
         // Update existing field
-        console.log(`Updating field ${fieldData.id} in collection ${collectionId} with data:`, updatedFieldConfig);
-        response = await updateField(collectionId, fieldData.id, updatedFieldConfig);
+        console.log(`Updating field ${fieldData.id} in collection ${collectionId} with data:`, fieldDataForSave);
+        response = await updateField(collectionId, fieldData.id, fieldDataForSave);
       } else {
         // Create new field
-        console.log(`Creating new field in collection ${collectionId} with data:`, updatedFieldConfig);
-        response = await createField(collectionId, updatedFieldConfig);
+        console.log(`Creating new field in collection ${collectionId} with data:`, fieldDataForSave);
+        response = await createField(collectionId, fieldDataForSave);
       }
       
       setApiResponse(response);
@@ -71,10 +84,10 @@ export function DebugFieldConfigPanel({
       console.log(`Debug - API response:`, JSON.stringify(response, null, 2));
       
       // Specifically log validation settings in the response
-      if (response?.settings?.validation) {
-        console.log(`Debug - Validation settings in response:`, JSON.stringify(response.settings.validation, null, 2));
+      if (response?.validation_settings) {
+        console.log(`Debug - Validation settings in response:`, JSON.stringify(response.validation_settings, null, 2));
       } else {
-        console.log(`Debug - No validation settings in response`);
+        console.log(`Debug - No validation_settings in response`);
       }
       
       toast({
@@ -90,6 +103,59 @@ export function DebugFieldConfigPanel({
       toast({
         title: "Error saving field",
         description: err.message || "There was an error saving the field to the database",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle saving validation settings specifically to the validation_settings column
+  const handleSaveValidation = async (validationData: any) => {
+    setIsSaving(true);
+    setError(null);
+    
+    console.log(`Debug - Saving validation settings:`, JSON.stringify(validationData, null, 2));
+    
+    // Only update the validation_settings column
+    try {
+      if (!fieldData?.id) {
+        toast({
+          title: "Cannot save validation",
+          description: "You must save the field first before saving validation settings",
+          variant: "destructive",
+        });
+        setIsSaving(false);
+        return;
+      }
+      
+      // Update existing field's validation settings only
+      const response = await updateField(collectionId, fieldData.id, {
+        validation_settings: validationData
+      });
+      
+      setApiResponse(response);
+      
+      // Update local state with the new validation data
+      setFieldConfig(prev => ({
+        ...prev,
+        validation: validationData,
+        validation_settings: validationData
+      }));
+      
+      console.log(`Debug - Validation settings saved, API response:`, JSON.stringify(response, null, 2));
+      
+      toast({
+        title: "Validation settings updated",
+        description: "Field validation settings were successfully saved to the database",
+      });
+    } catch (err: any) {
+      console.error("Error saving validation settings:", err);
+      setError(err.message || "An unknown error occurred");
+      
+      toast({
+        title: "Error saving validation settings",
+        description: err.message || "There was an error saving the validation settings",
         variant: "destructive",
       });
     } finally {
@@ -151,6 +217,20 @@ export function DebugFieldConfigPanel({
                     }}
                   >
                     Log to Console
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const validationData = fieldConfig.validation || fieldConfig.validation_settings || {};
+                      console.log('Current validation settings:', validationData);
+                      toast({
+                        title: "Logged to console",
+                        description: "Current validation settings have been logged to the console",
+                      });
+                    }}
+                  >
+                    Log Validation Settings
                   </Button>
                 </div>
               </div>

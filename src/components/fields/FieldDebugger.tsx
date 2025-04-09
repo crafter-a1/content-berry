@@ -49,9 +49,18 @@ export function FieldDebugger({ fieldData, apiResponse, isLoading = false }: Fie
   const differences = apiResponse ? getObjectDifferences(fieldData, apiResponse) : {};
   const hasDifferences = Object.keys(differences).length > 0;
 
-  // Extract validation data
-  const originalValidation = fieldData?.validation || fieldData?.settings?.validation || {};
-  const responseValidation = apiResponse?.validation || apiResponse?.settings?.validation || {};
+  // Extract validation data - check multiple possible locations
+  const originalValidation = 
+    fieldData?.validation_settings || 
+    fieldData?.validation || 
+    fieldData?.settings?.validation || 
+    {};
+    
+  const responseValidation = 
+    apiResponse?.validation_settings || 
+    apiResponse?.validation || 
+    apiResponse?.settings?.validation || 
+    {};
 
   return (
     <Card className="my-4">
@@ -87,20 +96,21 @@ export function FieldDebugger({ fieldData, apiResponse, isLoading = false }: Fie
                   <div className="mt-2">
                     <h4 className="text-sm font-medium mb-1">Validation Path in Data</h4>
                     <ul className="list-disc list-inside text-sm">
-                      {fieldData?.validation ? <li>Direct: fieldData.validation</li> : null}
+                      {fieldData?.validation_settings ? <li>Primary: fieldData.validation_settings</li> : null}
+                      {fieldData?.validation ? <li>Legacy: fieldData.validation</li> : null}
                       {fieldData?.settings?.validation ? <li>Nested: fieldData.settings.validation</li> : null}
-                      {!fieldData?.validation && !fieldData?.settings?.validation ? <li>No validation data found</li> : null}
+                      {!fieldData?.validation_settings && !fieldData?.validation && !fieldData?.settings?.validation ? <li>No validation data found</li> : null}
                     </ul>
                   </div>
                 </>
               )}
             </div>
             
-            {fieldData?.settings?.validation && (
+            {fieldData?.validation_settings && (
               <div className="mt-2">
-                <h4 className="text-sm font-medium mb-1">Settings.Validation</h4>
+                <h4 className="text-sm font-medium mb-1">validation_settings Column</h4>
                 <pre className="bg-green-50 p-3 rounded-md text-xs overflow-auto max-h-40">
-                  {JSON.stringify(fieldData.settings.validation, null, 2)}
+                  {JSON.stringify(fieldData.validation_settings, null, 2)}
                 </pre>
               </div>
             )}
@@ -116,11 +126,11 @@ export function FieldDebugger({ fieldData, apiResponse, isLoading = false }: Fie
                 : 'No response yet'}
             </pre>
             
-            {apiResponse?.settings?.validation && (
+            {apiResponse?.validation_settings && (
               <div className="mt-2">
-                <h4 className="text-sm font-medium mb-1">Response Validation Settings</h4>
+                <h4 className="text-sm font-medium mb-1">Response validation_settings</h4>
                 <pre className="bg-purple-50 p-3 rounded-md text-xs overflow-auto max-h-40">
-                  {JSON.stringify(apiResponse.settings.validation, null, 2)}
+                  {JSON.stringify(apiResponse.validation_settings, null, 2)}
                 </pre>
               </div>
             )}

@@ -13,7 +13,7 @@ import {
   FormControl,
   FormDescription
 } from "@/components/ui/form";
-import { Check, X, AlertCircle } from 'lucide-react';
+import { Check, X, AlertCircle, Save } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
 
@@ -21,11 +21,18 @@ export interface FieldValidationPanelProps {
   fieldType: string | null;
   initialData?: any;
   onUpdate: (data: any) => void;
+  onSaveToDatabase?: (data: any) => void;
+  isSaving?: boolean;
 }
 
-export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: FieldValidationPanelProps) {
+export function FieldValidationPanel({ 
+  fieldType, 
+  initialData = {}, 
+  onUpdate, 
+  onSaveToDatabase,
+  isSaving = false 
+}: FieldValidationPanelProps) {
   const [activeTab, setActiveTab] = useState('rules');
-  const [required, setRequired] = useState(initialData?.required || false);
   const [minLengthEnabled, setMinLengthEnabled] = useState(initialData?.minLengthEnabled || false);
   const [maxLengthEnabled, setMaxLengthEnabled] = useState(initialData?.maxLengthEnabled || false);
   const [patternEnabled, setPatternEnabled] = useState(initialData?.patternEnabled || false);
@@ -51,6 +58,7 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
   
   // Debug state to track changes
   const [lastUpdate, setLastUpdate] = useState<any>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   useEffect(() => {
     console.log('[FieldValidationPanel] Initial data received:', initialData);
@@ -59,7 +67,6 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
       // Check both direct properties and nested validation properties
       const validation = initialData.validation || initialData;
       
-      setRequired(validation.required || false);
       setMinLengthEnabled(validation.minLengthEnabled || false);
       setMaxLengthEnabled(validation.maxLengthEnabled || false);
       setPatternEnabled(validation.patternEnabled || false);
@@ -75,12 +82,39 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
       setAriaLabelledBy(validation.ariaLabelledBy || '');
       setAriaInvalid(validation.ariaInvalid || false);
       setAutocomplete(validation.autocomplete || '');
+      
+      // Reset unsaved changes flag
+      setHasUnsavedChanges(false);
     }
   }, [initialData]);
 
+  // Track changes to determine if there are unsaved changes
+  useEffect(() => {
+    const currentData = createValidationObject();
+    const initialValidation = initialData.validation || initialData;
+    
+    // Simple deep comparison
+    const isChanged = JSON.stringify(currentData) !== JSON.stringify(initialValidation);
+    setHasUnsavedChanges(isChanged);
+    
+    // Debounced update to parent component for preview purposes
+    const timer = setTimeout(() => {
+      const validationData = createValidationObject();
+      
+      // Update the parent component with the current validation state
+      onUpdate(validationData);
+      setLastUpdate(validationData);
+    }, 300); // 300ms debounce
+    
+    return () => clearTimeout(timer);
+  }, [
+    minLengthEnabled, maxLengthEnabled, patternEnabled,
+    customValidationEnabled, minLength, maxLength, pattern, customMessage, customValidation,
+    ariaRequired, ariaDescribedBy, ariaLabel, ariaLabelledBy, ariaInvalid, autocomplete
+  ]);
+
   const createValidationObject = () => {
-    const validationData = {
-      required,
+    return {
       minLengthEnabled,
       maxLengthEnabled,
       patternEnabled,
@@ -97,39 +131,31 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
       ariaInvalid,
       autocomplete
     };
-    
-    return validationData;
   };
 
-  // Debounced update function to reduce unnecessary updates
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const validationData = createValidationObject();
-      
-      // Only update if data has actually changed
-      if (JSON.stringify(lastUpdate) !== JSON.stringify(validationData)) {
-        console.log('[FieldValidationPanel] Updating validation data:', validationData);
-        onUpdate(validationData);
-        setLastUpdate(validationData);
-      }
-    }, 300); // 300ms debounce
+  const handleSaveToDatabase = () => {
+    const validationData = createValidationObject();
     
-    return () => clearTimeout(timer);
-  }, [
-    required, minLengthEnabled, maxLengthEnabled, patternEnabled,
-    customValidationEnabled, minLength, maxLength, pattern, customMessage, customValidation,
-    ariaRequired, ariaDescribedBy, ariaLabel, ariaLabelledBy, ariaInvalid, autocomplete
-  ]);
+    console.log('[FieldValidationPanel] Saving validation data to database:', validationData);
+    
+    // Call the onSaveToDatabase prop if it exists
+    if (onSaveToDatabase) {
+      onSaveToDatabase(validationData);
+      setHasUnsavedChanges(false);
+    } else {
+      // Fallback to onUpdate if no specific save handler provided
+      onUpdate(validationData);
+      
+      toast({
+        title: "Validation settings updated locally",
+        description: "Your validation settings have been saved locally, but not to the database",
+      });
+    }
+  };
 
   const testValidation = () => {
     const errors: string[] = [];
     let isValid = true;
-
-    // Test required
-    if (required && !testValue.trim()) {
-      errors.push("This field is required");
-      isValid = false;
-    }
 
     // Test min length
     if (minLengthEnabled && testValue.length < minLength) {
@@ -170,20 +196,6 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
     setValidationErrors(errors);
   };
 
-  const handleSaveToDatabase = () => {
-    const validationData = createValidationObject();
-    
-    console.log('[FieldValidationPanel] Manually saving validation data to database:', validationData);
-    
-    // Call onUpdate with the validation data
-    onUpdate(validationData);
-    
-    toast({
-      title: "Validation settings saved",
-      description: "Your validation settings have been updated",
-    });
-  };
-
   const renderValidationStatus = () => {
     if (validationResult === null) {
       return null;
@@ -218,33 +230,52 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-medium">Field Validation Rules</h2>
-      <p className="text-gray-500">
-        Configure validation rules for your field
-      </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-medium">Field Validation Rules</h2>
+          <p className="text-gray-500">
+            Configure validation rules for your field
+          </p>
+        </div>
+        <Button 
+          onClick={handleSaveToDatabase}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+          disabled={isSaving || !hasUnsavedChanges}
+        >
+          {isSaving ? (
+            <>
+              <span className="mr-2">Saving...</span>
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4 mr-2" />
+              Save Validation Settings
+            </>
+          )}
+        </Button>
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-6 bg-gray-100">
-          <TabsTrigger value="rules" className="data-[state=active]:bg-white">Validation Rules</TabsTrigger>
+          <TabsTrigger value="rules" className="data-[state=active]:bg-white">
+            Validation Rules 
+            {hasUnsavedChanges && activeTab === "rules" && (
+              <span className="ml-2 h-2 w-2 rounded-full bg-blue-500"></span>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="testing" className="data-[state=active]:bg-white">Live Testing</TabsTrigger>
-          <TabsTrigger value="accessibility" className="data-[state=active]:bg-white">Accessibility</TabsTrigger>
+          <TabsTrigger value="accessibility" className="data-[state=active]:bg-white">
+            Accessibility
+            {hasUnsavedChanges && activeTab === "accessibility" && (
+              <span className="ml-2 h-2 w-2 rounded-full bg-blue-500"></span>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="rules" className="space-y-4">
           <Card className="border rounded-md">
             <CardContent className="p-0">
-              <div className="flex flex-row items-center justify-between space-x-2 p-4 border-b">
-                <div>
-                  <h3 className="text-base font-medium">Required Field</h3>
-                  <p className="text-sm text-gray-500">
-                    Make this field mandatory for content creation
-                  </p>
-                </div>
-                <Switch
-                  checked={required}
-                  onCheckedChange={setRequired}
-                />
-              </div>
+              {/* Removed Required Field Section */}
 
               {fieldType && (
                 <>
@@ -366,16 +397,6 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
               </FormControl>
             </FormItem>
           )}
-          
-          <div className="flex justify-end pt-4">
-            <Button 
-              variant="secondary" 
-              onClick={handleSaveToDatabase}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              Save Validation Settings
-            </Button>
-          </div>
         </TabsContent>
 
         <TabsContent value="testing" className="space-y-4">
@@ -398,9 +419,6 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium">Current Validation Rules:</h4>
                   <ul className="text-sm text-gray-500 list-disc pl-5 space-y-1">
-                    {required && (
-                      <li>Required field</li>
-                    )}
                     {minLengthEnabled && (
                       <li>Minimum length: {minLength} characters</li>
                     )}
@@ -413,7 +431,7 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
                     {customValidationEnabled && customValidation && (
                       <li>Custom validation: (custom function)</li>
                     )}
-                    {!required && !minLengthEnabled && !maxLengthEnabled && !patternEnabled && !customValidationEnabled && (
+                    {!minLengthEnabled && !maxLengthEnabled && !patternEnabled && !customValidationEnabled && (
                       <li>No validation rules configured</li>
                     )}
                   </ul>
@@ -517,16 +535,6 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
                 <p className="text-xs text-gray-500">
                   Helps browsers autofill information correctly (e.g., "name", "email")
                 </p>
-              </div>
-              
-              <div className="flex justify-end pt-4">
-                <Button 
-                  variant="secondary" 
-                  onClick={handleSaveToDatabase}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Save Accessibility Settings
-                </Button>
               </div>
             </CardContent>
           </Card>

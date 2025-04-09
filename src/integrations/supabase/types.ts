@@ -82,43 +82,58 @@ export type Database = {
       }
       fields: {
         Row: {
+          advanced_settings: Json | null
           api_id: string
+          appearance_settings: Json | null
           collection_id: string | null
           created_at: string
           description: string | null
+          general_settings: Json | null
           id: string
           name: string
           required: boolean | null
           settings: Json | null
           sort_order: number | null
           type: string
+          ui_options_settings: Json | null
           updated_at: string
+          validation_settings: Json | null
         }
         Insert: {
+          advanced_settings?: Json | null
           api_id: string
+          appearance_settings?: Json | null
           collection_id?: string | null
           created_at?: string
           description?: string | null
+          general_settings?: Json | null
           id?: string
           name: string
           required?: boolean | null
           settings?: Json | null
           sort_order?: number | null
           type: string
+          ui_options_settings?: Json | null
           updated_at?: string
+          validation_settings?: Json | null
         }
         Update: {
+          advanced_settings?: Json | null
           api_id?: string
+          appearance_settings?: Json | null
           collection_id?: string | null
           created_at?: string
           description?: string | null
+          general_settings?: Json | null
           id?: string
           name?: string
           required?: boolean | null
           settings?: Json | null
           sort_order?: number | null
           type?: string
+          ui_options_settings?: Json | null
           updated_at?: string
+          validation_settings?: Json | null
         }
         Relationships: [
           {
